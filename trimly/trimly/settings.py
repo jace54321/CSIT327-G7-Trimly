@@ -15,8 +15,16 @@ from pathlib import Path
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from urllib.parse import urlparse
 
 load_dotenv()  # ✅ Loads your .env variables
+
+# Optional helper to parse DATABASE_URLs. This import is optional in requirements; if it's
+# available we prefer it because it handles more edge cases.
+try:
+    import dj_database_url  # type: ignore
+except Exception:
+    dj_database_url = None
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -89,8 +97,56 @@ WSGI_APPLICATION = 'trimly.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# If all required database environment variables are present, use PostgreSQL
-if all(os.getenv(var) for var in ['DB_NAME', 'DB_USER', 'DB_PASSWORD', 'DB_HOST']):
+# Database configuration is handled below (supports DB_URL/session pooler or individual vars)
+# Database configuration
+# Priority order:
+# 1. Use DB_URL (session pooler or standard connection string). Example:
+#    DB_URL=postgresql://user:password@host:5432/dbname
+#    When using a session pooler (like Supabase pooler) provide the pooler URL here.
+#    Optional variables:
+#      - DB_CONN_MAX_AGE (seconds, default 600) to keep DB connections open for reuse
+#      - DB_SSLMODE (e.g. require) or DB_SSL=true to enforce SSL for cloud providers
+# 2. Use individual DB_NAME/DB_USER/DB_PASSWORD/DB_HOST/DB_PORT variables (transaction style)
+# 3. Fallback to local SQLite for development
+
+db_url = os.getenv('DB_URL') or os.getenv('DATABASE_URL')
+if db_url:
+    # Prefer dj_database_url if installed because it handles many edge cases.
+    if dj_database_url:
+        DATABASES = {
+            'default': dj_database_url.parse(db_url, conn_max_age=int(os.getenv('DB_CONN_MAX_AGE', 600)))
+        }
+    else:
+        # Minimal manual parse for a postgres URL: postgres://user:pass@host:port/dbname
+        parsed = urlparse(db_url)
+        db_name = parsed.path[1:] if parsed.path.startswith('/') else parsed.path
+        db_user = parsed.username
+        db_password = parsed.password
+        db_host = parsed.hostname
+        db_port = parsed.port or '5432'
+
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': db_name,
+                'USER': db_user,
+                'PASSWORD': db_password,
+                'HOST': db_host,
+                'PORT': db_port,
+                # Keep connections open for reuse (session pooler benefits from longer conn lifetime)
+                'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', 600)),
+            }
+        }
+
+    # If the host looks like a cloud provider that requires SSL (e.g., supabase), enforce sslmode
+    host = DATABASES['default'].get('HOST')
+    if host and ('supabase' in host or 'rds' in host or os.getenv('DB_SSL', 'true').lower() == 'true'):
+        # Use OPTIONS for psycopg/ Django >= 2.0
+        DATABASES['default'].setdefault('OPTIONS', {})
+        DATABASES['default']['OPTIONS'].setdefault('sslmode', os.getenv('DB_SSLMODE', 'require'))
+
+elif all(os.getenv(var) for var in ['DB_NAME', 'DB_USER', 'DB_PASSWORD', 'DB_HOST']):
+    # Transaction-style individual environment variables
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -99,10 +155,11 @@ if all(os.getenv(var) for var in ['DB_NAME', 'DB_USER', 'DB_PASSWORD', 'DB_HOST'
             'PASSWORD': os.getenv('DB_PASSWORD'),
             'HOST': os.getenv('DB_HOST'),
             'PORT': os.getenv('DB_PORT', '5432'),
+            'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', 0)),
         }
     }
 else:
-    # Fallback to SQLite for development if PostgreSQL credentials are not configured
+    # Fallback to SQLite for development if no PostgreSQL credentials are configured
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
