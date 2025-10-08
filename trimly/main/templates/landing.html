@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trimly — Premium Barbershop</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'styles.css' %}">
+</head>
+<body>
+
+  <!-- Navbar -->
+  <header class="navbar">
+    <div class="navbar-left">
+      <h1 class="logo">Trimly</h1>
+    </div>
+    <div class="navbar-right">
+      <ul>
+        <li><a class="nav-link" href="#why">Why Trimly</a></li>
+        <li><a class="nav-link" href="#services">Services</a></li>
+        <li><a class="nav-link" href="#contact">Contact</a></li>
+      </ul>
+
+      {% if user.is_authenticated %}
+        <a href="{% if user.barber %}{% url 'barber_dashboard' %}{% else %}{% url 'customer_dashboard' %}{% endif %}" class="button booking">Dashboard</a>
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button class="button logout">Logout</button>
+        </form>
+      {% else %}
+        <a href="{% url 'register' %}" class="button booking">Get Started</a>
+        <a href="{% url 'login' %}" class="button logout">Sign In</a>
+      {% endif %}
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-inner">
+      <h2 class="hero-title">
+        Premium Barbershop <span class="hero-accent">Experience</span>
+      </h2>
+      <p class="hero-sub">
+        Professional grooming services with convenient online booking. Your perfect cut is just a click away.
+      </p>
+      <div class="hero-cta">
+        <a href="{% url 'register' %}" class="btn btn-light">Get Started</a>
+        <a href="{% url 'login' %}" class="btn btn-primary">Sign In</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Why Choose -->
+  <section id="why" class="why">
+    <div class="container">
+      <h3 class="section-title">Why Choose Trimly?</h3>
+      <p class="section-sub">Experience the perfect blend of traditional craftsmanship and modern convenience.</p>
+
+      <div class="why-grid">
+        <div class="why-card">
+          <p class="why-title">Easy Booking</p>
+          <p class="why-text">Book appointments with favorite barbers in just a few clicks.</p>
+        </div>
+        <div class="why-card">
+          <p class="why-title">Expert Barbers</p>
+          <p class="why-text">Professionals with years of experience and specialization.</p>
+        </div>
+        <div class="why-card">
+          <p class="why-title">Flexible Hours</p>
+          <p class="why-text">Wide range of available time slots to fit schedules.</p>
+        </div>
+        <div class="why-card">
+          <p class="why-title">Quality Service</p>
+          <p class="why-text">Highly rated for consistent, exceptional results.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Services -->
+  <section id="services" class="services">
+    <div class="container">
+      <h3 class="section-title">Our Services</h3>
+      <p class="section-sub">Professional grooming services tailored to style.</p>
+
+      <div class="services-grid">
+        <div class="svc-card">
+          <p class="svc-name">Classic Haircut</p>
+          <p class="svc-meta"><span>20 min</span> • <span>$35</span></p>
+        </div>
+        <div class="svc-card">
+          <p class="svc-name">Beard Trim</p>
+          <p class="svc-meta"><span>30 min</span> • <span>$35</span></p>
+        </div>
+        <div class="svc-card">
+          <p class="svc-name">Haircut + Beard</p>
+          <p class="svc-meta"><span>45 min</span> • <span>$45</span></p>
+        </div>
+        <div class="svc-card">
+          <p class="svc-name">Hot Towel Shave</p>
+          <p class="svc-meta"><span>40 min</span> • <span>$45</span></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Call to Action -->
+  <section class="cta-band" id="contact">
+    <div class="cta-inner">
+      <div class="cta-icon">★</div>
+      <h3 class="section-title">Ready for Your Best Look?</h3>
+      <p class="section-sub">Join customers who trust Trimly for reliable, high‑quality grooming.</p>
+      <a href="{% if user.is_authenticated %}{% if user.barber %}{% url 'barber_dashboard' %}{% else %}{% url 'customer_dashboard' %}{% endif %}{% else %}{% url 'register' %}{% endif %}" class="btn btn-primary">Book Your First Appointment</a>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <small>© {{ now|date:"Y" }} Trimly. All rights reserved.</small>
+  </footer>
+</body>
+</html>

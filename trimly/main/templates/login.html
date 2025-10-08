@@ -1,0 +1,49 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Trimly</title>
+  <link rel="stylesheet" href="{% static 'styles.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+</head>
+<body>
+  <!-- Navbar -->
+  <section id="navbar">
+    <nav class="navbar">
+      <div class="navbar-left">
+        <h1 class="logo">Trimly</h1>
+      </div>
+    </nav>
+  </section>
+
+  <!-- Login Card -->
+  <section class="login-container">
+    <div class="login-card">
+      <h2 style="text-align:center; margin-bottom:18px;">Login</h2>
+
+      {% if error %}
+        <p style="color: red; text-align:center;">{{ error }}</p>
+      {% endif %}
+
+      <form action="/login/" method="POST">
+        {% csrf_token %}
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required>
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required>
+        </div>
+        <button type="submit" class="book-btn" style="margin-top:16px;">Login</button>
+      </form>
+
+      <p style="text-align:center; margin-top:10px;">
+        Don't have an account? <a href="{% url 'register' %}">Register here</a>
+      </p>
+    </div>
+  </section>
+</body>
+</html>

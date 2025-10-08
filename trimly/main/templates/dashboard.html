@@ -1,0 +1,82 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book Appointment - Trimly</title>
+  <link rel="stylesheet" href="{% static 'styles.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+</head>
+<body>
+  <!-- Navbar -->
+  <section id="navbar">
+    <nav class="navbar">
+      <div class="navbar-left">
+        <h1 class="logo">Trimly</h1>
+      </div>
+      <div class="navbar-right">
+        <ul>
+          <li><i class="fa-solid fa-user" style="font-size: 22px; margin-left: 16px; color: gray;"></i></li>
+          <li><a href="#" class="button booking">My Bookings</a></li>
+        </ul>
+        <button class="button logout">Logout</button>
+      </div>
+    </nav>
+  </section>
+
+  <!-- Header -->
+  <section id="header">
+    <div class="header-content">
+      <h1>Book Your Appointment</h1>
+      <p>Welcome back, John! Let’s get you scheduled.</p>
+    </div>
+  </section>
+
+  <!-- Booking Steps -->
+  <section class="booking-container">
+    <div class="step-card">
+      <h2>1 Choose Service</h2>
+      <button class="service-btn">Classic Haircut <span>$35</span></button>
+      <button class="service-btn">Beard Trim <span>$25</span></button>
+      <button class="service-btn">Haircut + Beard <span>$55</span></button>
+      <button class="service-btn">Hair Wash & Style <span>$30</span></button>
+    </div>
+
+    <div class="step-card">
+      <h2>2 Choose Barber</h2>
+      <div class="barber-list">
+        <button class="barber available">Marcus Johnson <span>Available</span></button>
+        <button class="barber available">David Rodriguez <span>Available</span></button>
+        <button class="barber unavailable" disabled>James Wilson <span>Unavailable</span></button>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <h2>3 Pick Date & Time</h2>
+      <div class="calendar">
+        <label for="date">Select Date</label>
+        <input type="date" id="date" name="date">
+      </div>
+      <div class="time-slots">
+        <p>Available Times</p>
+        <div class="slots">
+          <button>09:00</button>
+          <button>09:30</button>
+          <button>10:00</button>
+          <button>10:30</button>
+          <button>11:00</button>
+          <button class="selected">11:30</button>
+          <button>14:00</button>
+          <button>14:30</button>
+          <button>15:00</button>
+          <button>15:30</button>
+          <button>16:00</button>
+          <button>16:30</button>
+        </div>
+      </div>
+      <button class="book-btn">Book Now</button>
+    </div>
+  </section>
+</body>
+</html>

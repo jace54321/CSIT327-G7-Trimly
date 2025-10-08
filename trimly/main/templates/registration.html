@@ -1,0 +1,77 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration - Trimly</title>
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <section id="navbar">
+        <nav class="navbar">
+            <div class="navbar-left">
+                <h1 class="logo">Trimly</h1>
+            </div>
+        </nav>
+    </section>
+
+    <!-- Registration Card -->
+    <section class="registration-container">
+        <div class="registration-card">
+            <h2 style="text-align:center; margin-bottom:18px;">Create an Account</h2>
+            <form action="/register/" method="POST">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirm-password">Confirm Password</label>
+                    <input type="password" id="confirm-password" name="confirm-password" required>
+                </div>
+
+                <div class="form-group">
+                    <label><strong>Select Role</strong></label>
+                    <div class="role-selection">
+                        <label class="role-box">
+                            <input type="radio" name="role" value="customer" required>
+                            <i class="fa-solid fa-user"></i>
+                            <p>Customer</p>
+                        </label>
+                        <label class="role-box">
+                            <input type="radio" name="role" value="barber">
+                            <i class="fa-solid fa-scissors"></i>
+                            <p>Barber</p>
+                        </label>
+                    </div>
+                </div>
+
+                <button type="submit" class="book-btn" style="margin-top:16px;">Register</button>
+            </form>
+            <p style="text-align:center; margin-top:12px;">
+                {% if messages %}
+    <div class="messages">
+    {% for message in messages %}
+      <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+                Already have an account? <a href="/login/">Login</a>
+            </p>
+        </div>
+    </section>
+</body>
+</html>
