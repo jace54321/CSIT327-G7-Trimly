@@ -1,110 +1,81 @@
-# Trimly
 
-A haircut reservation system built with Django and Supabase.
 
-## Dependencies Setup
+# TRIMLY
 
-1. Create and activate a virtual environment:
-   ```bash
-   # Windows
-   python -m venv venv
-   venv\Scripts\activate
-   ```
 
-2. Install the required packages:
-   ```bash
-   pip install -r requirements.txt
-   ```
+**Trimly** is a haircut reservation system built with Django and Supabase, enabling users to book appointments, manage schedules, and efficiently handle customer data. This project is a collaboration between IT317 – Project Management G1 and CSIT327 – Information Management 2 G7.
 
-   This will install:
-   - Django (5.2.7+) - Web framework
-   - python-dotenv (1.0.0+) - For loading environment variables
-   - psycopg2-binary (2.9.9+) - PostgreSQL adapter
-   - supabase (2.0.0+) - Supabase client
+## Tech Stack
 
-3. Run migrations to set up the database:
-   ```bash
-   cd trimly
-   python manage.py migrate
-   ```
+* **Backend:** Django 5.2.7+
+* **Frontend:** HTML, CSS
+* **Database:** SQLite (local) / PostgreSQL via Supabase (production)
+* **Environment Management:** python-dotenv
+* **Database Adapter:** psycopg2-binary
+* **Supabase Client:** supabase
 
-Note: The project will use SQLite by default for local development. If you need to connect to Supabase, ask for the `.env` file with the database credentials.
+## Setup & run instructions
 
-4. Navigate to the project directory:
-   ```bash
-   cd trimly
-   ```
+Get up and running in 3 simple steps:
 
-5. Create a `.env` file in the `trimly` directory with your database credentials:
-   ```
-   DB_USER=postgres.thkruwxuxwktiarugphd
-   DB_PASSWORD=<your-password>
-   DB_HOST=aws-1-ap-southeast-1.pooler.supabase.com
-   DB_PORT=6543
-   DB_NAME=postgres
-   ```
+```bash
+# 1. Clone the repo
+git clone https://github.com/jace54321/CSIT327-G7-Trimly.git
+cd csit327-g7-trimly/trimly
 
-   Note: For local development without Supabase, you can skip creating the `.env` file. The application will automatically fall back to SQLite.
+# 2. Set up environment
+python -m venv venv
+venv\Scripts\activate  # Windows
+# source venv/bin/activate  # macOS/Linux
+pip install -r requirements.txt
 
-6. Apply database migrations:
-   ```bash
-   python manage.py migrate
-   ```
+# 3. Run migrations and start server
+python manage.py migrate
+python manage.py runserver
+```
 
-7. Start the development server:
-   ```bash
-   python manage.py runserver
-   ```
+Open your browser: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
 
-8. Visit http://127.0.0.1:8000/ in your browser to see the application.
+> Optional: Create a `.env` file for Supabase/PostgreSQL credentials. Without it, SQLite will be used automatically.
 
 ## Project Structure
 
 ```
 trimly/
-├── main/                   # Main application
-│   ├── models.py          # Database models
-│   ├── views.py           # View functions
-│   ├── templates/         # HTML templates
-│   └── static/            # Static files (CSS, JS, images)
-├── trimly/                # Project configuration
-│   ├── settings.py        # Django settings
-│   └── urls.py            # URL routing
-└── manage.py              # Django management script
+├── main/           # App: models, views, templates, static files
+├── trimly/         # Project config: settings.py, urls.py
+└── manage.py       # Django management
 ```
 
-## Database Configuration
+## Team Members
 
-The project supports both PostgreSQL (Supabase) and SQLite:
+### Developers
 
-- **PostgreSQL/Supabase**: Used in production and when all database environment variables are set in `.env`
-- **SQLite**: Automatically used as fallback for local development when PostgreSQL credentials are not configured
+| Name                 | Role                 | CIT-U Email                                                       |
+| -------------------- | -------------------- | ----------------------------------------------------------------- |
+| Lord Anthone Acebedo | Lead Developer       | [lordanthone.acebedo@cit.edu](mailto:lordanthone.acebedo@cit.edu) |
+| Kenneth Alicaba      | Developer (Frontend) | [kenneth.alicaba@cit.edu](mailto:kenneth.alicaba@cit.edu)         |
+| Joseph Cris Arpon    | Developer (Backend)  | [josephcris.arpon@cit.edu](mailto:josephcris.arpon@cit.edu)       |
 
-## Contributing
+### Project Managers & Analysts
 
-1. Create a new branch for your feature:
-   ```bash
-   git checkout -b feature-name
-   ```
+| Name                     | Role             | CIT-U Email                                                               |
+| ------------------------ | ---------------- | ------------------------------------------------------------------------- |
+| Ace Denver Abella        | Product Owner    | [acedenver.abella@cit.edu](mailto:acedenver.abella@cit.edu)               |
+| Treasure Louise Abadinas | Business Analyst | [treasurelouise.abadinas@cit.edu](mailto:treasurelouise.abadinas@cit.edu) |
+| Myron Deandre Alia       | Business Analyst | [myrondeandre.alia@cit.edu](mailto:myrondeandre.alia@cit.edu)             |
+| Zydric Abel              | Scrum Master     | [zydric.abel@cit.edu](mailto:zydric.abel@cit.edu)                         |
 
-2. Make your changes and commit them:
-   ```bash
-   git add .
-   git commit -m "Description of changes"
-   ```
+## Deployed Link
 
-3. Push to your branch:
-   ```bash
-   git push origin feature-name
-   ```
-
-4. Create a Pull Request on GitHub
+*(404)*
 
 ## Troubleshooting
 
-- If you see database connection errors, check that your `.env` file exists and has the correct credentials
-- For local development, you can remove the `.env` file to use SQLite instead
-- Make sure all dependencies are installed with `pip install -r requirements.txt`
-- Ensure you're in the correct directory (trimly/) when running Django commands
-# CSIT327-G7-Trimly
-# CSIT327-G7-Trimly
+* Verify `.env` credentials for Supabase/PostgreSQL or remove the file for SQLite fallback.
+* Make sure dependencies are installed with `pip install -r requirements.txt`.
+* Run Django commands inside the `trimly/` directory.
+
+---
+
+
