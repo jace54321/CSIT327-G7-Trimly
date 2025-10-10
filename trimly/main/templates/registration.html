@@ -7,7 +7,34 @@
     <title>Registration - Trimly</title>
     <link rel="stylesheet" href="{% static 'styles.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-</head>
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js@1.12.0/src/toastify.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js@1.12.0/src/toastify.min.css">
+    <style>
+    
+        input:invalid {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+        }
+        
+        input:valid {
+            border-color: #28a745;
+            box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+        }
+        
+        .password-requirements {
+            margin-top: 8px;
+            padding: 12px;
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        
+        .password-requirements li {
+            margin: 4px 0;
+            color: #6c757d;
+        }
+    </style>
 <body>
     <!-- Navbar -->
     <section id="navbar">
@@ -26,16 +53,36 @@
                 {% csrf_token %}
                 <div class="form-group">
                     <label for="username">Username</label>
-                    <input type="text" id="username" name="username" required>
+                    <input type="text" id="username" name="username" required minlength="3">
                 </div>
+                
                 <div class="form-group">
                     <label for="email">Email</label>
-                    <input type="email" id="email" name="email" required>
+                    <input type="email" id="email" name="email" required 
+                           title="Please enter a valid email address">
                 </div>
+                
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required>
+                    <input type="password" id="password" name="password" required
+                        minlength="8"
+                        pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
+                        title="Password must be at least 8 characters and contain: 1 lowercase letter, 1 uppercase letter, 1 number, and 1 special character">
+
+                    
+                    <!-- Static requirements list -->
+                    <div class="password-requirements">
+                        <strong>Password must contain:</strong>
+                        <ul>
+                            <li>At least 8 characters</li>
+                            <li>At least 1 lowercase letter (a-z)</li>
+                            <li>At least 1 uppercase letter (A-Z)</li>
+                            <li>At least 1 number (0-9)</li>
+                            <li>At least 1 special character (!@#$%^&*)</li>
+                        </ul>
+                    </div>
                 </div>
+                
                 <div class="form-group">
                     <label for="confirm-password">Confirm Password</label>
                     <input type="password" id="confirm-password" name="confirm-password" required>
@@ -59,16 +106,29 @@
 
                 <button type="submit" class="book-btn" style="margin-top:16px;">Register</button>
             </form>
+            
+            <!-- THEN ADD THE MESSAGE SCRIPT AT THE BOTTOM, BEFORE </body> -->
+            {% if messages %}
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                {% for message in messages %}
+                Toastify({
+                    text: "{{ message|escapejs }}",
+                    duration: 3000,
+                    close: true,
+                    gravity: "top",
+                    position: "center",
+                    style: {
+                        background: "{% if message.tags == 'success' %}#28a745{% elif message.tags == 'error' %}#dc3545{% else %}#17a2b8{% endif %}",
+                    },
+                }).showToast();
+                {% endfor %}
+            });
+            </script>
+            {% endif %}
+
+            
             <p style="text-align:center; margin-top:12px;">
-                {% if messages %}
-    <div class="messages">
-    {% for message in messages %}
-      <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
-        {{ message }}
-      </div>
-    {% endfor %}
-  </div>
-{% endif %}
                 Already have an account? <a href="/login/">Login</a>
             </p>
         </div>
