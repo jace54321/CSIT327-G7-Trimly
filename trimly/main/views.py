@@ -4,6 +4,11 @@ from django.contrib.auth import authenticate, login, logout
 from .models import Barber, Customer
 from django.contrib import messages
 from django.db import IntegrityError
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
+from django.core.validators import EmailValidator
+
+
 
 def landing_view(request):
     # If already logged in, optionally jump straight to the correct dashboard.
@@ -16,14 +21,21 @@ def landing_view(request):
 
 def registration_view(request):
     if request.method == "POST":
-        username = request.POST.get("username")
-        email = request.POST.get("email")
-        password = request.POST.get("password")
-        confirm_password = request.POST.get("confirm-password")
-        role = request.POST.get("role")
+        username = request.POST.get("username") or ""
+        email = request.POST.get("email") or ""
+        password = request.POST.get("password") or ""
+        confirm_password = request.POST.get("confirm-password") or ""
+        role = request.POST.get("role") or ""
 
         if password != confirm_password:
             messages.error(request, "Passwords do not match!")
+            return redirect("register")
+
+        # Email format validation
+        try:
+            EmailValidator(message="Enter a valid email address.")(email)
+        except ValidationError as e:
+            messages.error(request, str(e))
             return redirect("register")
 
         if User.objects.filter(username=username).exists():
@@ -32,6 +44,16 @@ def registration_view(request):
 
         if User.objects.filter(email=email).exists():
             messages.error(request, "Email already registered!")
+            return redirect("register")
+
+        # Password policy validation
+        try:
+            # Optionally pass a user-like object if available for similarity checks
+            validate_password(password)
+        except ValidationError as e:
+            # Join all validator messages for display
+            for msg in e.messages:
+                messages.error(request, msg)
             return redirect("register")
 
         try:
@@ -44,10 +66,10 @@ def registration_view(request):
             messages.success(request, "Registration successful! You can now log in.")
             return redirect("login")
         except IntegrityError:
-            messages.error(request, "An account with this username already exists.")
+            messages.error(request, "Registration unsuccessful!")
             return redirect("register")
 
-    return render(request, "registration.html")
+    return render(request, 'registration.html')
 
 def login_view(request):
     if request.method == "POST":
