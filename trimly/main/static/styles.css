@@ -355,11 +355,10 @@ body {
 .hero {
   position: relative;
   color: #fff;
-  background: #2b1f16 url("./images/landing-page-hero.jpg") center/cover no-repeat;
-  will-change: background-position;
+  background: #2b1f16 url("./images/hero-banner.jpg") center 10%/cover no-repeat;
   isolation: isolate;
   pointer-events: none;
-  background-attachment: scroll;
+  background-attachment: fixed;
 }
 .hero::before {
   content: "";
@@ -377,7 +376,7 @@ body {
   max-width: 1100px;
   margin: 0 auto;
   text-align: center;
-  pointer-events: auto;
+  pointer-events: none; /* fixes hero background moving when hovered with mouse */
 }
 .hero-sub {
   max-width: 780px;
