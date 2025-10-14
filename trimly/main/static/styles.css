@@ -355,7 +355,7 @@ body {
 .hero {
   position: relative;
   color: #fff;
-  background: #2b1f16 url("./images/barbershop-hero.jpg") center/cover no-repeat;
+  background: #2b1f16 url("./images/landing-page-hero.jpg") center/cover no-repeat;
   will-change: background-position;
   isolation: isolate;
   pointer-events: none;
