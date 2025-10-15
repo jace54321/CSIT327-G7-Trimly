@@ -76,6 +76,47 @@
             <h2 style="text-align:center; margin-bottom:18px;">Create an Account</h2>
             <form action="/register/" method="POST">
                 {% csrf_token %}
+
+                
+                <!-- Personal Information -->
+                <div class="form-group">
+                    <label for="first_name">First Name *</label>
+                    <input type="text" 
+                           id="first_name" 
+                           name="first_name" 
+                           required 
+                           maxlength="30"
+                           value="{{ request.POST.first_name }}"
+                           placeholder="Enter your first name">
+                </div>
+
+                <div class="form-group">
+                    <label for="last_name">Last Name *</label>
+                    <input type="text" 
+                           id="last_name" 
+                           name="last_name" 
+                           required 
+                           maxlength="30"
+                           value="{{ request.POST.last_name }}"
+                           placeholder="Enter your last name">
+                </div>
+
+                <!-- Contact Information -->
+                <div class="form-group">
+                    <label for="phone_number">Phone Number *</label>
+                    <input type="text" 
+                           id="phone_number" 
+                           name="phone_number" 
+                           required 
+                           maxlength="11"
+                           value="{{ request.POST.phone_number }}"
+                           placeholder="09xxxxxxxxx (11 digits)">
+                    <small style="color: #666; font-size: 13px; margin-top: 4px; display: block;">
+                        Must start with 09 and contain exactly 11 digits
+                    </small>
+                </div>
+
+                   <!-- Account Information -->
                 <div class="form-group">
                     <label for="username">Username</label>
                     <input type="text" id="username" name="username" required minlength="3">
