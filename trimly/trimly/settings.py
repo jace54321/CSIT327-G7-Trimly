@@ -107,7 +107,7 @@ WSGI_APPLICATION = 'trimly.wsgi.application'
 #      - DB_CONN_MAX_AGE (seconds, default 600) to keep DB connections open for reuse
 #      - DB_SSLMODE (e.g. require) or DB_SSL=true to enforce SSL for cloud providers
 # 2. Use individual DB_NAME/DB_USER/DB_PASSWORD/DB_HOST/DB_PORT variables (transaction style)
-# 3. Fallback to local SQLite for development
+# 3. Fallback to local SQLite for development'
 
 db_url = os.getenv('DB_URL') or os.getenv('DATABASE_URL')
 if db_url:
@@ -124,7 +124,7 @@ if db_url:
         db_password = parsed.password
         db_host = parsed.hostname
         db_port = parsed.port or '5432'
-
+ 
         DATABASES = {
             'default': {
                 'ENGINE': 'django.db.backends.postgresql',
@@ -137,14 +137,14 @@ if db_url:
                 'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', 600)),
             }
         }
-
+ 
     # If the host looks like a cloud provider that requires SSL (e.g., supabase), enforce sslmode
     host = DATABASES['default'].get('HOST')
     if host and ('supabase' in host or 'rds' in host or os.getenv('DB_SSL', 'true').lower() == 'true'):
         # Use OPTIONS for psycopg/ Django >= 2.0
         DATABASES['default'].setdefault('OPTIONS', {})
         DATABASES['default']['OPTIONS'].setdefault('sslmode', os.getenv('DB_SSLMODE', 'require'))
-
+ 
 elif all(os.getenv(var) for var in ['DB_NAME', 'DB_USER', 'DB_PASSWORD', 'DB_HOST']):
     # Transaction-style individual environment variables
     DATABASES = {
@@ -166,8 +166,7 @@ else:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
-
-
+    
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 

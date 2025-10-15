@@ -1,3 +1,4 @@
+import re
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
@@ -21,53 +22,97 @@ def landing_view(request):
 
 def registration_view(request):
     if request.method == "POST":
-        username = request.POST.get("username") or ""
-        email = request.POST.get("email") or ""
-        password = request.POST.get("password") or ""
-        confirm_password = request.POST.get("confirm-password") or ""
-        role = request.POST.get("role") or ""
+        # Get form data
+        username = request.POST.get("username", "").strip()
+        email = request.POST.get("email", "").strip()
+        first_name = request.POST.get("first_name", "").strip()
+        last_name = request.POST.get("last_name", "").strip()
+        phone_number = request.POST.get("phone_number", "").strip()
+        password = request.POST.get("password", "")
+        confirm_password = request.POST.get("confirm-password", "")
+        role = request.POST.get("role", "")
 
+        # Validation errors list
+        errors = []
+
+        # Required fields validation
+        if not all([username, email, first_name, last_name, phone_number, password, confirm_password, role]):
+            errors.append("All fields are required.")
+
+        # Phone number validation (same approach as password validation)
+        if phone_number:
+            try:
+                clean_phone = validate_phone_number(phone_number)
+            except ValidationError as e:
+                errors.extend(e.messages)
+
+        # Password confirmation
         if password != confirm_password:
-            messages.error(request, "Passwords do not match!")
-            return redirect("register")
+            errors.append("Passwords do not match.")
 
         # Email format validation
-        try:
-            EmailValidator(message="Enter a valid email address.")(email)
-        except ValidationError as e:
-            messages.error(request, str(e))
-            return redirect("register")
+        if email:
+            try:
+                EmailValidator(message="Enter a valid email address.")(email)
+            except ValidationError:
+                errors.append("Enter a valid email address.")
 
+        # Check for existing users
         if User.objects.filter(username=username).exists():
-            messages.error(request, "Username already taken!")
-            return redirect("register")
-
+            errors.append("Username already taken.")
+        
         if User.objects.filter(email=email).exists():
-            messages.error(request, "Email already registered!")
-            return redirect("register")
+            errors.append("Email already registered.")
 
-        # Password policy validation
-        try:
-            # Optionally pass a user-like object if available for similarity checks
-            validate_password(password)
-        except ValidationError as e:
-            # Join all validator messages for display
-            for msg in e.messages:
-                messages.error(request, msg)
-            return redirect("register")
+        # Check for existing phone number
+        if phone_number:
+            try:
+                clean_phone = validate_phone_number(phone_number)
+                # Check if phone number already exists in Customer or Barber
+                if (Customer.objects.filter(phone_number=clean_phone).exists() or 
+                    Barber.objects.filter(phone_number=clean_phone).exists()):
+                    errors.append("Phone number already registered.")
+            except ValidationError:
+                pass  # Error already added above
+
+        # Password policy validation (same as your current approach)
+        if password:
+            try:
+                validate_password(password)
+            except ValidationError as e:
+                errors.extend(e.messages)
+
+        # Display errors if any
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+            return render(request, 'registration.html')
 
         try:
-            user = User.objects.create_user(username=username, email=email, password=password)
+            # Create user with all fields
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                first_name=first_name,
+                last_name=last_name
+            )
+
+            # Use the validated clean phone number
+            clean_phone = validate_phone_number(phone_number)
+
+            # Create profile based on role
             if role == "barber":
-                Barber.objects.create(user=user)
+                Barber.objects.create(user=user, phone_number=clean_phone)
             elif role == "customer":
-                Customer.objects.create(user=user)
+                Customer.objects.create(user=user, phone_number=clean_phone)
 
             messages.success(request, "Registration successful! You can now log in.")
             return redirect("login")
+
         except IntegrityError:
-            messages.error(request, "Registration unsuccessful!")
-            return redirect("register")
+            messages.error(request, "Registration unsuccessful! Please try again.")
+            return render(request, 'registration.html')
 
     return render(request, 'registration.html')
 
@@ -110,3 +155,22 @@ def customer_dashboard(request):
 def logout_view(request):
     logout(request)
     return redirect("login")
+
+
+def validate_phone_number(phone_number):
+    """
+    Custom phone number validator similar to password validation
+    """
+    if not phone_number:
+        raise ValidationError("Phone number is required.")
+    
+    # Remove any spaces or dashes
+    clean_phone = re.sub(r'[\s\-]', '', phone_number)
+    
+    # Check if it matches the pattern: 09 followed by 9 digits (total 11)
+    if not re.match(r'^09[0-9]{9}$', clean_phone):
+        raise ValidationError(
+            "Phone number must start with 09 and contain exactly 11 digits (e.g., 09123456789)."
+        )
+    
+    return clean_phone
