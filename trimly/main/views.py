@@ -10,9 +10,12 @@ from django.core.exceptions import ValidationError
 from django.core.validators import EmailValidator
 
 
-
+# -------------------------------
+# View to display the landing page
+# Redirects authenticated users to their respective dashboards
+# -------------------------------
 def landing_view(request):
-    # If already logged in, optionally jump straight to the correct dashboard.
+    # If already logged in, redirect to the appropriate dashboard
     if request.user.is_authenticated:
         if hasattr(request.user, "barber"):
             return redirect("barber_dashboard")
@@ -20,9 +23,14 @@ def landing_view(request):
             return redirect("customer_dashboard")
     return render(request, "landing.html")
 
+
+# -------------------------------
+# Handles user registration for both barbers and customers
+# Includes validation for email, password, and phone number
+# -------------------------------
 def registration_view(request):
     if request.method == "POST":
-        # Get form data
+        # Retrieve form data
         username = request.POST.get("username", "").strip()
         email = request.POST.get("email", "").strip()
         first_name = request.POST.get("first_name", "").strip()
@@ -32,64 +40,61 @@ def registration_view(request):
         confirm_password = request.POST.get("confirm-password", "")
         role = request.POST.get("role", "")
 
-        # Validation errors list
-        errors = []
+        errors = []  # List to collect all validation errors
 
-        # Required fields validation
+        # Check required fields
         if not all([username, email, first_name, last_name, phone_number, password, confirm_password, role]):
             errors.append("All fields are required.")
 
-        # Phone number validation (same approach as password validation)
+        # Validate phone number format
         if phone_number:
             try:
                 clean_phone = validate_phone_number(phone_number)
             except ValidationError as e:
                 errors.extend(e.messages)
 
-        # Password confirmation
+        # Confirm passwords match
         if password != confirm_password:
             errors.append("Passwords do not match.")
 
-        # Email format validation
+        # Validate email format
         if email:
             try:
                 EmailValidator(message="Enter a valid email address.")(email)
             except ValidationError:
                 errors.append("Enter a valid email address.")
 
-        # Check for existing users
+        # Check if username or email already exists
         if User.objects.filter(username=username).exists():
             errors.append("Username already taken.")
-        
         if User.objects.filter(email=email).exists():
             errors.append("Email already registered.")
 
-        # Check for existing phone number
+        # Check if phone number already exists in Barber or Customer models
         if phone_number:
             try:
                 clean_phone = validate_phone_number(phone_number)
-                # Check if phone number already exists in Customer or Barber
                 if (Customer.objects.filter(phone_number=clean_phone).exists() or 
                     Barber.objects.filter(phone_number=clean_phone).exists()):
                     errors.append("Phone number already registered.")
             except ValidationError:
-                pass  # Error already added above
+                pass  # Already handled above
 
-        # Password policy validation (same as your current approach)
+        # Validate password strength
         if password:
             try:
                 validate_password(password)
             except ValidationError as e:
                 errors.extend(e.messages)
 
-        # Display errors if any
+        # If there are any validation errors, show them to the user
         if errors:
             for error in errors:
                 messages.error(request, error)
             return render(request, 'registration.html')
 
+        # Create user and corresponding role profile
         try:
-            # Create user with all fields
             user = User.objects.create_user(
                 username=username,
                 email=email,
@@ -98,10 +103,9 @@ def registration_view(request):
                 last_name=last_name
             )
 
-            # Use the validated clean phone number
             clean_phone = validate_phone_number(phone_number)
 
-            # Create profile based on role
+            # Create either a Barber or Customer profile
             if role == "barber":
                 Barber.objects.create(user=user, phone_number=clean_phone)
             elif role == "customer":
@@ -116,58 +120,94 @@ def registration_view(request):
 
     return render(request, 'registration.html')
 
+
+# -------------------------------
+# Handles user login (by username or email)
+# Redirects to dashboard based on user role
+# -------------------------------
 def login_view(request):
     if request.method == "POST":
         email_or_username = request.POST.get("email")
         password = request.POST.get("password")
 
+        # Check if user exists by email or username
+        user_exists = False
         try:
             user_obj = User.objects.get(email=email_or_username)
             username = user_obj.username
+            user_exists = True
         except User.DoesNotExist:
-            username = email_or_username
+            # Maybe user entered username instead
+            if User.objects.filter(username=email_or_username).exists():
+                user_exists = True
+                username = email_or_username
+            else:
+                username = None
 
+        # If user doesn't exist, trigger email tooltip
+        if not user_exists:
+            return render(request, "login.html", {"user_not_found": True})
+
+        # Authenticate password
         user = authenticate(request, username=username, password=password)
-
         if user is not None:
             login(request, user)
-            if hasattr(user, "barber"):
+
+            # Redirect based on role
+            if hasattr(user, "barber_profile"):
                 return redirect("barber_dashboard")
-            elif hasattr(user, "customer"):
+            elif hasattr(user, "customer_profile"):
                 return redirect("customer_dashboard")
-            messages.error(request, "No role assigned to this account.")
-            return redirect("login")
-        messages.error(request, "Invalid email/username or password.")
-        return redirect("login")
+
+        # Wrong password case
+        return render(request, "login.html", {"wrong_password": True})
 
     return render(request, "login.html")
 
+
+
+# -------------------------------
+# Displays the barber dashboard (requires authentication)
+# -------------------------------
 def barber_dashboard(request):
     if not request.user.is_authenticated:
         return redirect("login")
     return render(request, "barber_dashboard.html")
 
+
+# -------------------------------
+# Displays the customer dashboard (requires authentication)
+# -------------------------------
 def customer_dashboard(request):
     if not request.user.is_authenticated:
         return redirect("login")
     return render(request, "customer_dashboard.html")
 
+
+# -------------------------------
+# Logs out the current user and redirects to login page
+# -------------------------------
 def logout_view(request):
     logout(request)
     return redirect("login")
 
 
+# -------------------------------
+# Custom function to validate and sanitize phone numbers
+# Ensures Philippine format: must start with 09 and contain 11 digits
+# -------------------------------
 def validate_phone_number(phone_number):
     """
-    Custom phone number validator similar to password validation
+    Custom phone number validator similar to password validation.
+    Returns a cleaned phone number or raises ValidationError if invalid.
     """
     if not phone_number:
         raise ValidationError("Phone number is required.")
     
-    # Remove any spaces or dashes
+    # Remove any spaces or dashes for uniformity
     clean_phone = re.sub(r'[\s\-]', '', phone_number)
     
-    # Check if it matches the pattern: 09 followed by 9 digits (total 11)
+    # Validate pattern: 09 followed by 9 digits (11 total)
     if not re.match(r'^09[0-9]{9}$', clean_phone):
         raise ValidationError(
             "Phone number must start with 09 and contain exactly 11 digits (e.g., 09123456789)."
