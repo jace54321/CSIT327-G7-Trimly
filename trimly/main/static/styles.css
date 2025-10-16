@@ -124,6 +124,7 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 .navbar-left .logo {
+  font-family: "Playfair Display", serif;
   font-size: 28px;
   font-weight: bold;
   color: brown;
@@ -184,7 +185,9 @@ body {
 
 /* Header */
 .header-content {
-  text-align: center;
+  text-align: left;
+  max-width: 100%;
+  margin-left: 24px;
   padding: 24px;
 }
 
@@ -192,19 +195,22 @@ body {
 .booking-container {
   display: flex;
   justify-content: center;
-  gap: 24px;
+  gap: 30px;
   padding: 20px;
 }
 
 /* Step cards */
 .step-card {
-  flex: 1;
+  flex: 0 0 20%; /* makes each card 25% of container width */
   background: #fff;
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
-
+.service-info {
+  display: flex;
+  flex-direction: column;
+}
 /* Service buttons */
 .service-btn {
   display: flex;
@@ -332,10 +338,10 @@ body {
 /* Typography */
 .hero-title {
   font-family: "Playfair Display", serif;
-  font-size: 40px;
+  font-size: 60px;
   margin: 0 0 12px;
   letter-spacing: 0.2px;
-  text-shadow: 0 2px 6px rgba(0,0,0,.35);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 .hero-accent { color: var(--accent); }
 .section-title {
@@ -358,16 +364,14 @@ body {
   background: #2b1f16 url("./images/hero-banner.jpg") center 10%/cover no-repeat;
   isolation: isolate;
   /* Allow pointer events so inner controls are clickable */
-  pointer-events: auto;
   background-attachment: scroll;
+  pointer-events: auto;
 }
 .hero::before {
   content: "";
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(to bottom, rgba(43,31,22,.35), rgba(43,31,22,.55)),
-    rgba(0,0,0,.25);
+  background:#2b1f16 url("./images/hero-banner.jpg") center 10%/cover no-repeat;
   z-index: 0;
   /* Prevent overlay from blocking clicks */
   pointer-events: none;
@@ -384,8 +388,9 @@ body {
 .hero-sub {
   max-width: 780px;
   margin: 0 auto 24px;
+  font-size: 17px;
   opacity: .98;
-  text-shadow: 0 1px 4px rgba(0,0,0,.25);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 /* Nav links */
@@ -555,3 +560,7 @@ body {
 
 
 
+.welcome-message {
+  font-size: 15px;
+  color: #473a3a;
+}

@@ -1,2 +1,123 @@
-<h1>Welcome, Customer {{ request.user.username }}!</h1>
-<a href="{% url 'logout' %}">Logout</a>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trimly — Premium Barbershop</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'styles.css' %}">
+</head>
+<body>
+
+  <!-- Navbar -->
+  <header class="navbar">
+    <div class="navbar-left">
+      <button onclick="location.href='{% url 'landing' %}'">
+        <h1 class="logo">Trimly</h1></button>
+    </div>
+    <div class="navbar-right">
+      <ul>
+        <li><a class="nav-link" href="#book">Book Appointment</a></li>
+        <li><a class="nav-link" href="#bookings">My Bookings</a></li>
+      </ul>
+
+      {% if user.is_authenticated %}
+        <a class="welcome-message">Welcome, {{ user.username }}!</a>
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button class="button logout">Logout</button>
+        </form>
+      {% else %}
+        <a href="{% url 'register' %}" class="button booking">Get Started</a>
+        <a href="{% url 'login' %}" class="button logout">Sign In</a>
+      {% endif %}
+    </div>
+  </header>
+
+   <!-- Header -->
+  <section id="header">
+    <div class="header-content">
+      <h1>Book Your Appointment</h1>
+      <p>Welcome back, {{ user.username }}! Let’s get you scheduled.</p>
+    </div>
+  </section>
+
+  <!-- Booking Steps -->
+  <section class="booking-container">
+    <div class="step-card">
+      <h2>1 Choose Service</h2>
+
+      <button class="service-btn">
+        <div class="service-info">
+            <h3>Classic Haircut</h3>
+            <p>Description for Classic Haircut</p>
+            <p>$35</p>
+            <p>30 min</p>
+        </div>
+      </button>
+      
+      <button class="service-btn">
+        <div class="service-info">
+          <h3>Beard Trim</h3>
+          <p>Description for Beard Trim</p>
+          <p>$25</p>
+          <p>15 min</p>
+        </div>
+      </button>
+
+      <button class="service-btn">
+        <div>
+          <h3>Haircut + Beard</h3>
+          <p>Description for Haircut + Beard</p>
+          <p>$55</p>
+          <p>45 min</p>
+        </div>
+      </button>
+
+      <button class="service-btn">
+        <div>
+          <h3>Hair Wash & Style</h3>
+          <p>Description for Hair Wash & Style</p>
+          <p>$30</p>
+          <p>30 min</p>
+        </div>
+      </button>
+    </div>
+
+    <div class="step-card">
+      <h2>2 Choose Barber</h2>
+      <div class="barber-list">
+        <button class="barber available">Marcus Johnson <span>Available</span></button>
+        <button class="barber available">David Rodriguez <span>Available</span></button>
+        <button class="barber unavailable" disabled>James Wilson <span>Unavailable</span></button>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <h2>3 Pick Date & Time</h2>
+      <div class="calendar">
+        <label for="date">Select Date</label>
+        <input type="date" id="date" name="date">
+      </div>
+      <div class="time-slots">
+        <p>Available Times</p>
+        <div class="slots">
+          <button>09:00</button>
+          <button>09:30</button>
+          <button>10:00</button>
+          <button>10:30</button>
+          <button>11:00</button>
+          <button class="selected">11:30</button>
+          <button>14:00</button>
+          <button>14:30</button>
+          <button>15:00</button>
+          <button>15:30</button>
+          <button>16:00</button>
+          <button>16:30</button>
+        </div>
+      </div>
+      <button class="book-btn">Book Now</button>
+    </div>
+  </section>
+</body>
+</html>
