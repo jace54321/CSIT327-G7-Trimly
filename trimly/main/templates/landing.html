@@ -5,34 +5,44 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Trimly — Premium Barbershop</title>
   {% load static %}
-  <link rel="stylesheet" href="{% static 'styles.css' %}">
+  <link rel="stylesheet" href="{% static 'base.css' %}">
+  <link rel="stylesheet" href="{% static 'landing.css' %}">
 </head>
 <body>
 
-  <!-- Navbar -->
-  <header class="navbar">
-    <div class="navbar-left">
-      <h1 class="logo">Trimly</h1>
+<!-- Navbar -->
+<header class="navbar">
+  <div class="navbar-left">
+      <a href="{% url 'landing' %}" class="logo-link">
+        <h1 class="logo">Trimly</h1>
+      </a>
     </div>
-    <div class="navbar-right">
-      <ul>
-        <li><a class="nav-link" href="#why">Why Trimly</a></li>
-        <li><a class="nav-link" href="#services">Services</a></li>
-        <li><a class="nav-link" href="#contact">Contact</a></li>
-      </ul>
 
-      {% if user.is_authenticated %}
-        <a href="{% if user.barber %}{% url 'barber_dashboard' %}{% else %}{% url 'customer_dashboard' %}{% endif %}" class="button booking">Dashboard</a>
-        <form method="post" action="{% url 'logout' %}">
-          {% csrf_token %}
-          <button class="button logout">Logout</button>
-        </form>
-      {% else %}
-        <a href="{% url 'register' %}" class="button booking">Get Started</a>
-        <a href="{% url 'login' %}" class="button logout">Sign In</a>
-      {% endif %}
-    </div>
-  </header>
+
+  <div class="navbar-right">
+    <ul>
+      <li><a class="nav-link" href="#why">Why Trimly</a></li>
+      <li><a class="nav-link" href="#services">Services</a></li>
+      <li><a class="nav-link" href="#contact">Contact</a></li>
+    </ul>
+
+    {% if user.is_authenticated %}
+      <a
+        href="{% if user.barber %}{% url 'barber_dashboard' %}{% else %}{% url 'customer_dashboard' %}{% endif %}"
+        class="btn btn-light"
+      >Dashboard</a>
+
+      <form method="post" action="{% url 'logout' %}" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary">Logout</button>
+      </form>
+    {% else %}
+      <a href="{% url 'register' %}" class="btn btn-light">Get Started</a>
+      <a href="{% url 'login' %}" class="btn btn-primary">Sign In</a>
+    {% endif %}
+  </div>
+</header>
+
 
   <!-- Hero -->
   <section class="hero">
