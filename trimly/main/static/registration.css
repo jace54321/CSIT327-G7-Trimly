@@ -1,0 +1,187 @@
+/* ==========================================================================
+   Registration page
+   - Layout and card
+   - Form inputs + validation helpers
+   - Password visibility controls
+   - Role selection cards
+   - Submit button reuse
+   ========================================================================== */
+
+/* Page */
+body {
+  color: var(--text);
+  background: #faf9f7;
+}
+
+/* Layout */
+.registration-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+}
+
+/* Card */
+.registration-card {
+  /* Box */
+  width: 100%;
+  max-width: 400px;
+  padding: 32px 28px 24px;
+
+  /* Visual */
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Form */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.form-group input {
+  /* Box */
+  padding: 10px;
+  border: 1px solid #e6e6e6;
+  border-radius: 6px;
+
+  /* Visual */
+  background: #faf9f7;
+  color: var(--text);
+
+  /* Text */
+  font-size: 15px;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: #fffbe6;
+}
+
+/* Validation helpers (inline style moved here) */
+input:invalid {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+input:valid {
+  border-color: #28a745;
+  box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+/* Password requirements list */
+.password-requirements {
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+
+  /* Visual */
+  background-color: #f8f9fa;
+
+  /* Text */
+  font-size: 13px;
+}
+
+.password-requirements li {
+  margin: 4px 0;
+  color: #6c757d;
+}
+
+/* Password visibility wrapper */
+.password-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.password-wrapper input {
+  width: 100%;
+  box-sizing: border-box;
+
+  /* Make space for visibility icon */
+  padding-right: 40px;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  cursor: pointer;
+}
+
+.toggle-password:hover {
+  color: #343a40;
+}
+
+/* Role selection */
+.role-selection {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 10px;
+}
+
+.role-box {
+  /* Layout */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  /* Box */
+  width: 120px;
+  height: 120px;
+  border: 2px solid #e6e6e6;
+  border-radius: 10px;
+  padding: 8px;
+
+  /* Visual */
+  background: #fafafa;
+
+  /* Interaction */
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  /* Text */
+  font-size: 14px;
+}
+
+.role-box i {
+  font-size: 28px;
+  margin-bottom: 8px;
+  color: var(--brand);
+}
+
+.role-box:hover {
+  background: #fffbe6;
+  border-color: var(--accent);
+}
+
+/* Hide default radio input */
+.role-box input[type="radio"] {
+  display: none;
+}
+
+/* Selected state */
+.role-box:has(input[type="radio"]:checked) {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+
+.role-box input[type="radio"]:checked ~ p {
+  font-weight: 700;
+}
+
+/* Submit button uses .book-btn from base.css */

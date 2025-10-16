@@ -1,0 +1,192 @@
+/* ==========================================================================
+   Customer dashboard
+   - Navbar reuse + welcome text
+   - Header section
+   - Booking steps layout
+   - Service cards
+   - Barber list
+   - Time slots
+   - Book button and messages
+   ========================================================================== */
+
+/* Base page color (inherits font from base.css) */
+body {
+  color: var(--text);
+  background: #faf9f7;
+}
+
+/* Optional welcome text styling */
+.welcome-message {
+  font-size: 15px;
+  color: #473a3a;
+}
+
+/* Header section */
+#header .header-content {
+  /* Box */
+  max-width: 100%;
+  margin-left: 24px;
+  padding: 24px;
+
+  /* Typography */
+  text-align: left;
+}
+
+/* Booking layout */
+.booking-container {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  padding: 20px;
+}
+
+.step-card {
+  /* Flex item */
+  flex: 0 0 20%;
+
+  /* Card */
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Services */
+.service-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.service-btn {
+  /* Box */
+  width: 100%;
+  margin: 8px 0;
+  padding: 12px 16px;
+  border: 1px solid #e6e6e6;
+  border-radius: 8px;
+
+  /* Visual */
+  background: #fdfdfd;
+
+  /* Interaction */
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.service-btn:hover {
+  background: #f5f5f5;
+}
+
+/* Barbers */
+.barber-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.barber {
+  /* Box */
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+
+  /* Visual */
+  background: #fdfdfd;
+
+  /* Interaction */
+  display: flex;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.barber.available span {
+  color: var(--brand);
+  font-size: 14px;
+}
+
+.barber.unavailable {
+  background: #f2f2f2;
+  color: #999;
+  cursor: not-allowed;
+}
+
+/* Date/time selection */
+.calendar {
+  display: grid;
+  gap: 8px;
+}
+
+.time-slots {
+  margin-top: 16px;
+}
+
+.time-slots > p {
+  margin: 0 0 6px;
+}
+
+.slots {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.slots button {
+  /* Box */
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+
+  /* Visual */
+  background: #fff;
+
+  /* Interaction */
+  cursor: pointer;
+}
+
+.slots button:hover {
+  background: #f5f5f5;
+}
+
+.slots button.selected {
+  background: var(--accent);
+  border-color: #d4a017;
+  font-weight: 700;
+}
+
+/* Booking submit (reuses shared .book-btn styles) */
+
+/* Messages/alerts */
+.messages {
+  margin-bottom: 16px;
+}
+
+.alert {
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.alert-success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.alert-error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+/* Responsive layout for booking steps */
+@media (max-width: 960px) {
+  .booking-container {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .step-card {
+    flex: 1 1 auto;
+  }
+}

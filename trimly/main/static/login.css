@@ -1,0 +1,71 @@
+/* ==========================================================================
+   Login page
+   - Layout container
+   - Card
+   - Form inputs
+   - Submit button reuse
+   ========================================================================== */
+
+/* Page background and base color (font inherits from base.css) */
+body {
+  color: var(--text);
+  background: #faf9f7;
+}
+
+/* Layout */
+.login-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Occupy viewport height minus navbar if present */
+  min-height: 80vh;
+}
+
+/* Card */
+.login-card {
+  /* Box */
+  width: 100%;
+  max-width: 350px;
+  padding: 32px 28px 24px;
+
+  /* Visual */
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Form */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.form-group input {
+  /* Box */
+  padding: 10px;
+  border: 1px solid #e6e6e6;
+  border-radius: 6px;
+
+  /* Visual */
+  background: #faf9f7;
+  color: var(--text);
+
+  /* Text */
+  font-size: 15px;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: #fffbe6;
+}
+
+/* Submit button uses .book-btn from base.css */
