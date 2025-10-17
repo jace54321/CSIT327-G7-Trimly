@@ -11,11 +11,16 @@ from django.core.exceptions import ValidationError
 from django.core.validators import EmailValidator
 from django.utils import timezone
 from datetime import datetime, timedelta
+from django.shortcuts import render, redirect
 
 # -------------------------------
 # View to display the landing page
 # -------------------------------
 def landing_view(request):
+    # Bypass redirect if explicitly requested
+    if request.GET.get("show") == "landing":
+        return render(request, "landing.html")
+
     if request.user.is_authenticated:
         if hasattr(request.user, "barber_profile"):
             return redirect("barber_dashboard")
