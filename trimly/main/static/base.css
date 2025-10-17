@@ -4,8 +4,9 @@
    - Global resets and typography
    - Shared layout utilities
    - Navbar and link styles
-   - Shared buttons
+   - Unified button system
    ========================================================================== */
+
 
 /* Design tokens */
 :root {
@@ -24,6 +25,7 @@
   --space-5: 20px;
   --space-6: 24px;
 }
+
 
 /* Base element styles */
 html,
@@ -44,15 +46,18 @@ body {
   background: #faf9f7;
 }
 
+
 /* Layout utilities */
 .container {
   max-width: 1100px;
   margin: 0 auto;
 }
 
-/* Navbar
+
+/* ==========================================================================
+   Navbar
    - Shared structure used by all pages
-*/
+   ========================================================================== */
 .navbar {
   display: flex;
   align-items: center;
@@ -128,60 +133,158 @@ body {
   transform: translateY(-1px);
 }
 
-/* Buttons (shared) */
+
+/* ==========================================================================
+   Unified Button System
+   - Global button base and variants
+   - Used across all templates for consistency
+   ========================================================================== */
 .btn {
   /* Layout */
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
 
   /* Box */
   padding: 10px 18px;
   border: 1px solid transparent;
   border-radius: 8px;
+  box-sizing: border-box;
 
   /* Typography */
+  font-size: 14px;
+  line-height: 1;
   font-weight: 600;
   text-decoration: none;
 
   /* Interactions */
   cursor: pointer;
-  transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease,
-    background 0.2s ease,
-    color 0.2s ease;
+  user-select: none;
+  white-space: nowrap;
+  transition: background .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, transform .06s ease;
+}
+
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(243, 211, 124, 0.45); /* accent focus ring */
 }
 
 .btn:active {
   transform: translateY(1px);
 }
 
+/* Button variants */
+
 /* Primary CTA (brand color) */
 .btn-primary {
   background: var(--brand);
   color: #fff;
+  border-color: var(--brand);
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.15);
 }
 
 .btn-primary:hover {
   background: #a0522d;
+  border-color: #a0522d;
   box-shadow: 0 6px 14px rgba(165, 42, 42, 0.25);
+}
+
+/* Secondary (neutral) */
+.btn-secondary {
+  background: #7a6e65;
+  color: #fff;
+  border-color: #7a6e65;
+}
+
+.btn-secondary:hover { 
+  background: #6b5a45; 
+  border-color: #6b5a45; 
+}
+
+/* Danger/destructive */
+.btn-danger {
+  background: #e74c3c;
+  color: #fff;
+  border-color: #e74c3c;
+}
+
+.btn-danger:hover { 
+  background: #c0392b; 
+  border-color: #c0392b; 
 }
 
 /* Light CTA (accent color) */
 .btn-light {
   background: var(--accent);
   color: var(--text);
+  border-color: var(--accent);
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.06);
 }
 
 .btn-light:hover {
   background: #ffe4a1;
+  border-color: #ffe4a1;
   box-shadow: 0 6px 14px rgba(243, 211, 124, 0.35);
 }
 
-/* Reused wide submit button */
+/* Tertiary/minimal (ghost) */
+.btn-ghost {
+  background: transparent;
+  color: var(--text);
+  border-color: transparent;
+}
+
+.btn-ghost:hover {
+  background: rgba(0,0,0,0.05);
+}
+
+/* Size modifiers */
+.btn-sm { 
+  padding: 8px 14px; 
+  font-size: 13px; 
+  border-radius: 7px; 
+}
+
+.btn-lg { 
+  padding: 12px 22px; 
+  font-size: 15px; 
+  border-radius: 10px; 
+}
+
+.btn-block { 
+  display: flex; 
+  width: 100%; 
+}
+
+/* Disabled state */
+.btn[disabled],
+.btn.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Context overrides for dark backgrounds */
+.dark-bg .btn-ghost { 
+  color: #f7f7f7; 
+}
+
+.dark-bg .btn-ghost:hover { 
+  background: rgba(255,255,255,0.1); 
+}
+
+.dark-bg .btn-secondary { 
+  background: #6b5a45; 
+  border-color: #6b5a45; 
+}
+
+.dark-bg .btn-secondary:hover { 
+  background: #5e4e3b; 
+  border-color: #5e4e3b; 
+}
+
+/* Legacy support: .book-btn (wide submit button) */
 .book-btn {
   width: 100%;
   padding: 12px;
@@ -194,11 +297,17 @@ body {
 
   /* Text */
   font-size: 16px;
+  font-weight: 600;
 
   /* Interaction */
   cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
 }
 
 .book-btn:hover {
   background: #a0522d;
+}
+
+.book-btn:active {
+  transform: translateY(1px);
 }

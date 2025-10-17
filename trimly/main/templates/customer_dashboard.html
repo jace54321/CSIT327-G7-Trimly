@@ -9,257 +9,268 @@
     <link rel="stylesheet" href="{% static 'customer_dashboard.css' %}">
 </head>
 <body>
-    <!-- Header Section -->
-    <section id="header">
-        <div class="header-content">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-                <div>
-                    <h1>Welcome back, {{ user.first_name|default:user.username }}!</h1>
-                    <p class="welcome-message">Manage your appointments and book new services.</p>
-                </div>
-                <a href="{% url 'logout' %}" class="logout-btn">Logout</a>
-            </div>
-        </div>
-    </section>
 
-    <!-- Messages -->
-    {% if messages %}
-    <div class="messages-container">
-        {% for message in messages %}
-        <div class="alert alert-{{ message.tags }}">
-            {{ message }}
-            <a href="{% url 'customer_dashboard' %}" class="close-alert">&times;</a>
-        </div>
-        {% endfor %}
-    </div>
+<!-- Navbar -->
+<header class="navbar">
+  <div class="navbar-left">
+      <a href="{% url 'landing' %}" class="logo-link">
+        <h1 class="logo">Trimly</h1>
+      </a>
+  </div>
+
+  <div class="navbar-right">
+    {% if user.is_authenticated %}
+      <a
+        href="{% if user.barber %}{% url 'barber_dashboard' %}{% else %}{% url 'customer_dashboard' %}{% endif %}"
+        class="btn btn-light"
+      >Welcome back, {{ user.first_name|default:user.username }}!</a>
+
+      <form method="post" action="{% url 'logout' %}" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary">Logout</button>
+      </form>
+    {% else %}
+      <a href="{% url 'register' %}" class="btn btn-light">Get Started</a>
+      <a href="{% url 'login' %}" class="btn btn-primary">Sign In</a>
     {% endif %}
+  </div>
+</header>
 
-    <!-- Quick Action: Book New Appointment -->
-    <div class="quick-action-bar">
-        <div class="quick-action-content">
-            <a href="{% url 'customer_dashboard' %}?action=book" class="btn-book-new">
-                + Book New Appointment
-            </a>
+<!-- Messages -->
+{% if messages %}
+<div class="messages-container">
+  {% for message in messages %}
+  <div class="alert alert-{{ message.tags }}">
+      {{ message }}
+      <a href="{% url 'customer_dashboard' %}" class="close-alert">&times;</a>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Dashboard Container -->
+<div class="dashboard-wrapper">
+  <!-- Left Column: My Bookings -->
+  <div class="bookings-section">
+    <h2>My Bookings</h2>
+    
+    <!-- Upcoming Bookings -->
+    <div class="bookings-category">
+      <h3>Upcoming Appointments</h3>
+      {% if upcoming_bookings %}
+        <div class="bookings-list">
+          {% for booking in upcoming_bookings %}
+          <div class="booking-card {% if selected_booking.id == booking.id %}selected{% endif %}">
+            <div class="booking-header">
+              <span class="service-name">{{ booking.service_type.name }}</span>
+              <span class="booking-status status-{{ booking.status }}">{{ booking.get_status_display }}</span>
+            </div>
+            <div class="booking-details">
+              <p><strong>Barber:</strong> {{ booking.barber.get_full_name }}</p>
+              <p><strong>Date:</strong> {{ booking.appointment_datetime|date:"F d, Y" }}</p>
+              <p><strong>Time:</strong> {{ booking.appointment_datetime|date:"g:i A" }}</p>
+              <p><strong>Duration:</strong> {{ booking.duration }} min</p>
+              <p><strong>Price:</strong> ${{ booking.price }}</p>
+            </div>
+            <div class="booking-actions">
+              <a href="{% url 'customer_dashboard' %}?view={{ booking.id }}" class="btn btn-secondary">View Details</a>
+
+              {% if booking.can_be_cancelled %}
+                <a href="{% url 'customer_dashboard' %}?reschedule={{ booking.id }}" class="btn btn-primary">Reschedule</a>
+
+                <form method="POST" action="{% url 'cancel_booking' booking.id %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to cancel this booking?');">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-danger">Cancel</button>
+                </form>
+              {% else %}
+                <span class="btn-disabled">Cannot Cancel</span>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
         </div>
+      {% else %}
+        <p class="no-bookings">No upcoming appointments. Book a service to get started!</p>
+      {% endif %}
     </div>
 
-    <!-- Dashboard Container -->
-    <div class="dashboard-wrapper">
-        <!-- Left Column: My Bookings -->
-        <div class="bookings-section">
-            <h2>My Bookings</h2>
-            
-            <!-- Upcoming Bookings -->
-            <div class="bookings-category">
-                <h3>Upcoming Appointments</h3>
-                {% if upcoming_bookings %}
-                    <div class="bookings-list">
-                        {% for booking in upcoming_bookings %}
-                        <div class="booking-card {% if selected_booking.id == booking.id %}selected{% endif %}">
-                            <div class="booking-header">
-                                <span class="service-name">{{ booking.service_type.name }}</span>
-                                <span class="booking-status status-{{ booking.status }}">{{ booking.get_status_display }}</span>
-                            </div>
-                            <div class="booking-details">
-                                <p><strong>Barber:</strong> {{ booking.barber.get_full_name }}</p>
-                                <p><strong>Date:</strong> {{ booking.appointment_datetime|date:"F d, Y" }}</p>
-                                <p><strong>Time:</strong> {{ booking.appointment_datetime|date:"g:i A" }}</p>
-                                <p><strong>Duration:</strong> {{ booking.duration }} min</p>
-                                <p><strong>Price:</strong> ${{ booking.price }}</p>
-                            </div>
-                            <div class="booking-actions">
-                                <a href="{% url 'customer_dashboard' %}?view={{ booking.id }}" class="btn-view">View Details</a>
-                                
-                                {% if booking.can_be_cancelled %}
-                                <a href="{% url 'customer_dashboard' %}?reschedule={{ booking.id }}" class="btn-reschedule">Reschedule</a>
-                                
-                                <form method="POST" action="{% url 'cancel_booking' booking.id %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to cancel this booking?');">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn-cancel">Cancel</button>
-                                </form>
-                                {% else %}
-                                <span class="btn-disabled">Cannot Cancel</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <p class="no-bookings">No upcoming appointments. Book a service to get started!</p>
-                {% endif %}
+    <!-- Past Bookings -->
+    <div class="bookings-category">
+      <h3>Past Appointments</h3>
+      {% if past_bookings %}
+        <div class="bookings-list">
+          {% for booking in past_bookings %}
+          <div class="booking-card past-booking {% if selected_booking.id == booking.id %}selected{% endif %}">
+            <div class="booking-header">
+              <span class="service-name">{{ booking.service_type.name }}</span>
+              <span class="booking-status status-{{ booking.status }}">{{ booking.get_status_display }}</span>
             </div>
-
-            <!-- Past Bookings -->
-            <div class="bookings-category">
-                <h3>Past Appointments</h3>
-                {% if past_bookings %}
-                    <div class="bookings-list">
-                        {% for booking in past_bookings %}
-                        <div class="booking-card past-booking {% if selected_booking.id == booking.id %}selected{% endif %}">
-                            <div class="booking-header">
-                                <span class="service-name">{{ booking.service_type.name }}</span>
-                                <span class="booking-status status-{{ booking.status }}">{{ booking.get_status_display }}</span>
-                            </div>
-                            <div class="booking-details">
-                                <p><strong>Barber:</strong> {{ booking.barber.get_full_name }}</p>
-                                <p><strong>Date:</strong> {{ booking.appointment_datetime|date:"F d, Y" }}</p>
-                                <p><strong>Time:</strong> {{ booking.appointment_datetime|date:"g:i A" }}</p>
-                                <p><strong>Price:</strong> ${{ booking.price }}</p>
-                            </div>
-                            <div class="booking-actions">
-                                <a href="{% url 'customer_dashboard' %}?view={{ booking.id }}" class="btn-view-small">View Details</a>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <p class="no-bookings">No past appointments yet.</p>
-                {% endif %}
+            <div class="booking-details">
+              <p><strong>Barber:</strong> {{ booking.barber.get_full_name }}</p>
+              <p><strong>Date:</strong> {{ booking.appointment_datetime|date:"F d, Y" }}</p>
+              <p><strong>Time:</strong> {{ booking.appointment_datetime|date:"g:i A" }}</p>
+              <p><strong>Price:</strong> ${{ booking.price }}</p>
             </div>
+            <div class="booking-actions">
+              <a href="{% url 'customer_dashboard' %}?view={{ booking.id }}" class="btn btn-ghost btn-sm">View Details</a>
+            </div>
+          </div>
+          {% endfor %}
         </div>
-
-        <!-- Right Column: Detail Panel / Reschedule Form / New Booking Form -->
-        <div class="detail-panel">
-            {% if show_booking_form %}
-                <!-- NEW BOOKING FORM -->
-                <h3>Book New Appointment</h3>
-                <form method="POST" action="{% url 'create_booking' %}" class="booking-form">
-                    {% csrf_token %}
-                    
-                    <div class="form-group">
-                        <label for="service">Select Service:</label>
-                        <select id="service" name="service_id" required>
-                            <option value="">-- Choose a Service --</option>
-                            {% for service in services %}
-                            <option value="{{ service.id }}" data-duration="{{ service.duration }}" data-price="{{ service.price }}">
-                                {{ service.name }} - ${{ service.price }} ({{ service.duration }} min)
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="barber">Select Barber:</label>
-                        <select id="barber" name="barber_id" required>
-                            <option value="">-- Choose a Barber --</option>
-                            {% for barber in barbers %}
-                            <option value="{{ barber.id }}">
-                                {{ barber.get_full_name }}{% if barber.specialty %} - {{ barber.specialty }}{% endif %}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="booking-date">Appointment Date:</label>
-                        <input type="date" 
-                               id="booking-date" 
-                               name="appointment_date" 
-                               min="{{ today|date:'Y-m-d' }}"
-                               required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="booking-time">Appointment Time:</label>
-                        <input type="time" 
-                               id="booking-time" 
-                               name="appointment_time" 
-                               required>
-                        <small>Business hours: 9:00 AM - 6:00 PM</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="notes">Special Requests (optional):</label>
-                        <textarea id="notes" 
-                                  name="notes" 
-                                  rows="3" 
-                                  placeholder="Any special instructions or preferences..."></textarea>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="submit" class="btn-primary">Confirm Booking</button>
-                        <a href="{% url 'customer_dashboard' %}" class="btn-secondary">Cancel</a>
-                    </div>
-                </form>
-
-            {% elif reschedule_booking %}
-                <!-- RESCHEDULE FORM -->
-                <h3>Reschedule Appointment</h3>
-                <form method="POST" action="{% url 'reschedule_booking' reschedule_booking.id %}" class="reschedule-form">
-                    {% csrf_token %}
-                    
-                    <div class="current-booking-info">
-                        <h4>Current Booking:</h4>
-                        <p><strong>Service:</strong> {{ reschedule_booking.service_type.name }}</p>
-                        <p><strong>Barber:</strong> {{ reschedule_booking.barber.get_full_name }}</p>
-                        <p><strong>Current Date:</strong> {{ reschedule_booking.appointment_datetime|date:"F d, Y" }}</p>
-                        <p><strong>Current Time:</strong> {{ reschedule_booking.appointment_datetime|date:"g:i A" }}</p>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="new-date">New Date:</label>
-                        <input type="date" 
-                               id="new-date" 
-                               name="new_date" 
-                               value="{{ reschedule_booking.appointment_datetime|date:'Y-m-d' }}"
-                               min="{{ today|date:'Y-m-d' }}"
-                               required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="new-time">New Time:</label>
-                        <input type="time" 
-                               id="new-time" 
-                               name="new_time" 
-                               value="{{ reschedule_booking.appointment_datetime|date:'H:i' }}"
-                               required>
-                        <small>Business hours: 9:00 AM - 6:00 PM</small>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="submit" class="btn-primary">Confirm Reschedule</button>
-                        <a href="{% url 'customer_dashboard' %}" class="btn-secondary">Cancel</a>
-                    </div>
-                </form>
-
-            {% elif selected_booking %}
-                <!-- BOOKING DETAIL VIEW -->
-                <h3>Booking Details</h3>
-                <div class="detail-info">
-                    <p><strong>Booking ID:</strong> #{{ selected_booking.id }}</p>
-                    <p><strong>Service:</strong> {{ selected_booking.service_type.name }}</p>
-                    <p><strong>Description:</strong> {{ selected_booking.service_type.description|default:"N/A" }}</p>
-                    <p><strong>Barber:</strong> {{ selected_booking.barber.get_full_name }}</p>
-                    <p><strong>Date:</strong> {{ selected_booking.appointment_datetime|date:"F d, Y" }}</p>
-                    <p><strong>Time:</strong> {{ selected_booking.appointment_datetime|date:"g:i A" }}</p>
-                    <p><strong>Duration:</strong> {{ selected_booking.duration }} minutes</p>
-                    <p><strong>Price:</strong> ${{ selected_booking.price }}</p>
-                    <p><strong>Status:</strong> <span class="status-badge status-{{ selected_booking.status }}">{{ selected_booking.get_status_display }}</span></p>
-                    {% if selected_booking.service_description %}
-                    <p><strong>Notes:</strong> {{ selected_booking.service_description }}</p>
-                    {% endif %}
-                    <p><strong>Booked on:</strong> {{ selected_booking.created_at|date:"F d, Y" }}</p>
-                </div>
-
-                <div class="detail-actions">
-                    <a href="{% url 'customer_dashboard' %}" class="btn-secondary">Close</a>
-                    
-                    {% if selected_booking.can_be_cancelled %}
-                    <a href="{% url 'customer_dashboard' %}?reschedule={{ selected_booking.id }}" class="btn-primary">Reschedule</a>
-                    
-                    <form method="POST" action="{% url 'cancel_booking' selected_booking.id %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to cancel this booking?');">
-                        {% csrf_token %}
-                        <button type="submit" class="btn-danger">Cancel Booking</button>
-                    </form>
-                    {% endif %}
-                </div>
-
-            {% else %}
-                <!-- PLACEHOLDER -->
-                <h3>Booking Details</h3>
-                <p class="placeholder-text">Select a booking to view details or click "Book New Appointment" to create one.</p>
-            {% endif %}
-        </div>
+      {% else %}
+        <p class="no-bookings">No past appointments yet.</p>
+      {% endif %}
     </div>
+  </div>
+
+  <!-- Right Column: Detail Panel / Reschedule Form / New Booking Form -->
+  <div class="detail-panel">
+    {% if show_booking_form %}
+      <!-- NEW BOOKING FORM -->
+      <h3>Book New Appointment</h3>
+      <form method="POST" action="{% url 'create_booking' %}" class="booking-form">
+        {% csrf_token %}
+        
+        <div class="form-group">
+          <label for="service">Select Service:</label>
+          <select id="service" name="service_id" required>
+            <option value="">-- Choose a Service --</option>
+            {% for service in services %}
+            <option value="{{ service.id }}" data-duration="{{ service.duration }}" data-price="{{ service.price }}">
+              {{ service.name }} - ${{ service.price }} ({{ service.duration }} min)
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="barber">Select Barber:</label>
+          <select id="barber" name="barber_id" required>
+            <option value="">-- Choose a Barber --</option>
+            {% for barber in barbers %}
+            <option value="{{ barber.id }}">
+              {{ barber.get_full_name }}{% if barber.specialty %} - {{ barber.specialty }}{% endif %}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="booking-date">Appointment Date:</label>
+          <input type="date" 
+                 id="booking-date" 
+                 name="appointment_date" 
+                 min="{{ today|date:'Y-m-d' }}"
+                 required>
+        </div>
+        
+        <div class="form-group">
+          <label for="booking-time">Appointment Time:</label>
+          <input type="time" 
+                 id="booking-time" 
+                 name="appointment_time" 
+                 required>
+          <small>Business hours: 9:00 AM - 6:00 PM</small>
+        </div>
+
+        <div class="form-group">
+          <label for="notes">Special Requests (optional):</label>
+          <textarea id="notes" 
+                    name="notes" 
+                    rows="3" 
+                    placeholder="Any special instructions or preferences..."></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Confirm Booking</button>
+          <a href="{% url 'customer_dashboard' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+      </form>
+
+    {% elif reschedule_booking %}
+      <!-- RESCHEDULE FORM -->
+      <h3>Reschedule Appointment</h3>
+      <form method="POST" action="{% url 'reschedule_booking' reschedule_booking.id %}" class="reschedule-form">
+        {% csrf_token %}
+        
+        <div class="current-booking-info">
+          <h4>Current Booking:</h4>
+          <p><strong>Service:</strong> {{ reschedule_booking.service_type.name }}</p>
+          <p><strong>Barber:</strong> {{ reschedule_booking.barber.get_full_name }}</p>
+          <p><strong>Current Date:</strong> {{ reschedule_booking.appointment_datetime|date:"F d, Y" }}</p>
+          <p><strong>Current Time:</strong> {{ reschedule_booking.appointment_datetime|date:"g:i A" }}</p>
+        </div>
+
+        <div class="form-group">
+          <label for="new-date">New Date:</label>
+          <input type="date" 
+                 id="new-date" 
+                 name="new_date" 
+                 value="{{ reschedule_booking.appointment_datetime|date:'Y-m-d' }}"
+                 min="{{ today|date:'Y-m-d' }}"
+                 required>
+        </div>
+        
+        <div class="form-group">
+          <label for="new-time">New Time:</label>
+          <input type="time" 
+                 id="new-time" 
+                 name="new_time" 
+                 value="{{ reschedule_booking.appointment_datetime|date:'H:i' }}"
+                 required>
+          <small>Business hours: 9:00 AM - 6:00 PM</small>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Confirm Reschedule</button>
+          <a href="{% url 'customer_dashboard' %}" class="btn btn-secondary">Close</a>
+        </div>
+      </form>
+
+    {% elif selected_booking %}
+      <!-- BOOKING DETAIL VIEW -->
+      <h3>Booking Details</h3>
+      <div class="detail-info">
+        <p><strong>Booking ID:</strong> #{{ selected_booking.id }}</p>
+        <p><strong>Service:</strong> {{ selected_booking.service_type.name }}</p>
+        <p><strong>Description:</strong> {{ selected_booking.service_type.description|default:"N/A" }}</p>
+        <p><strong>Barber:</strong> {{ selected_booking.barber.get_full_name }}</p>
+        <p><strong>Date:</strong> {{ selected_booking.appointment_datetime|date:"F d, Y" }}</p>
+        <p><strong>Time:</strong> {{ selected_booking.appointment_datetime|date:"g:i A" }}</p>
+        <p><strong>Duration:</strong> {{ selected_booking.duration }} minutes</p>
+        <p><strong>Price:</strong> ${{ selected_booking.price }}</p>
+        <p><strong>Status:</strong> <span class="status-badge status-{{ selected_booking.status }}">{{ selected_booking.get_status_display }}</span></p>
+        {% if selected_booking.service_description %}
+        <p><strong>Notes:</strong> {{ selected_booking.service_description }}</p>
+        {% endif %}
+        <p><strong>Booked on:</strong> {{ selected_booking.created_at|date:"F d, Y" }}</p>
+      </div>
+
+      <div class="detail-actions">
+        <a href="{% url 'customer_dashboard' %}" class="btn btn-secondary">Close</a>
+        
+        {% if selected_booking.can_be_cancelled %}
+          <a href="{% url 'customer_dashboard' %}?reschedule={{ selected_booking.id }}" class="btn btn-primary">Reschedule</a>
+          
+          <form method="POST" action="{% url 'cancel_booking' selected_booking.id %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to cancel this booking?');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Cancel Booking</button>
+          </form>
+        {% endif %}
+      </div>
+
+    {% else %}
+      <!-- PLACEHOLDER -->
+      <h3>Booking Details</h3>
+      <p class="placeholder-text">Select a booking to view details or click "Book New Appointment" to create one.</p>
+
+      <div class="quick-action-content">
+        <a href="{% url 'customer_dashboard' %}?action=book" class="btn btn-primary">
+          + Book New Appointment
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</div>
 </body>
 </html>
