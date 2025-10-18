@@ -15,4 +15,5 @@ urlpatterns = [
     path("dashboard/barber/", views.barber_dashboard, name="barber_dashboard"),
     path("dashboard/customer/", views.customer_dashboard, name="customer_dashboard"),
     path("logout/", views.logout_view, name="logout"),
+     path('dashboard/barber/toggle-availability/', views.toggle_availability, name='toggle_availability'),
 ]

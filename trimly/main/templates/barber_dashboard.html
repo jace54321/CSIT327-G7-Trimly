@@ -1,2 +1,137 @@
-<h1>Welcome, Barber {{ request.user.username }}!</h1>
-<a href="{% url 'logout' %}">Logout</a>
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trimly - Barber Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'barber_dashboard.css' %}">
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="nav-left">
+      <h1 class="logo">Trimly</h1>
+    </div>
+    <ul class="nav-links">
+      <li><a href="#">Dashboard</a></li>
+      <li><a href="#">Schedule</a></li>
+    </ul>
+    <div class="nav-right">
+      <span>Welcome, {{ request.user.username }}</span>
+     <a href="{% url 'logout' %}" class="logout-btn">Logout</a>
+    </div>
+  </nav>
+
+  <!-- Main Dashboard -->
+  <section class="dashboard">
+    <div class="dashboard-header">
+      <div>
+        <h2>Barber Dashboard</h2>
+        <p>Welcome back, {{ request.user.username }}! Here's your schedule overview.</p>
+      </div>
+
+      <!-- Availability Toggle -->
+      <div class="availability-toggle">
+        <label class="toggle-label" for="availability-switch">Available for bookings</label>
+        <label class="switch">
+          <input type="checkbox" id="availability-switch" {% if barber.is_available_for_booking %}checked{% endif %}>
+          <span class="slider round"></span>
+        </label>
+        <span id="availability-status" class="status-text">
+          {% if barber.is_available_for_booking %}Available{% else %}Unavailable{% endif %}
+        </span>
+      </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats">
+      <div class="card">
+        <p>Today's Appointments</p>
+        <h3>0</h3>
+        <small>Scheduled for today</small>
+      </div>
+      <div class="card">
+        <p>This Week</p>
+        <h3>0</h3>
+        <small>Total bookings</small>
+      </div>
+      <div class="card">
+        <p>Completed</p>
+        <h3>0</h3>
+        <small>Successfully completed</small>
+      </div>
+      <div class="card">
+        <p>Average Rating</p>
+        <h3>{{ barber.average_rating|default:"4.9" }}</h3>
+        <small>Customer satisfaction</small>
+      </div>
+    </div>
+
+    <!-- Middle Section -->
+    <div class="schedule-section">
+      <div class="schedule">
+        <h3>Today's Schedule</h3>
+        <div class="empty">
+          <i>📅</i>
+          <p>No appointments scheduled for today</p>
+        </div>
+      </div>
+
+      <div class="quick-actions">
+        <h3>Quick Actions</h3>
+        <button>Update Schedule</button>
+        <button>Block Time Slots</button>
+        <button>View Profile</button>
+        <button class="settings">Settings</button>
+      </div>
+    </div>
+
+    <!-- Upcoming Appointments -->
+    <div class="upcoming">
+      <h3>Upcoming Appointments</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>Service</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Price</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="6" class="no-appointments">📅 No upcoming appointments</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const toggle = document.getElementById('availability-switch');
+      const status = document.getElementById('availability-status');
+
+      toggle.addEventListener('change', function () {
+        const available = toggle.checked;
+        status.textContent = available ? 'Available' : 'Unavailable';
+        status.style.color = available ? '#4CAF50' : '#f44336';
+
+        fetch("{% url 'toggle_availability' %}", {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ available: available }),
+        });
+      });
+    });
+  </script>
+</body>
+</html>

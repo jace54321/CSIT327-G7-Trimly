@@ -8,7 +8,12 @@ from django.db import IntegrityError
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.core.validators import EmailValidator
-
+from django.http import JsonResponse
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required
+from .models import Barber
+import json
 
 # -------------------------------
 # View to display the landing page
@@ -175,6 +180,22 @@ def barber_dashboard(request):
     return render(request, "barber_dashboard.html")
 
 
+@login_required
+@csrf_exempt
+def toggle_availability(request):
+    """Toggle or set the barber's availability via AJAX"""
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            available = data.get('available', False)
+            barber = Barber.objects.get(user=request.user)
+            barber.is_available_for_booking = available
+            barber.save()
+            return JsonResponse({"success": True, "available": available})
+        except Barber.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Barber not found"}, status=404)
+    return JsonResponse({"success": False, "error": "Invalid request"}, status=400)
+
 # -------------------------------
 # Displays the customer dashboard (requires authentication)
 # -------------------------------
@@ -214,3 +235,4 @@ def validate_phone_number(phone_number):
         )
     
     return clean_phone
+
