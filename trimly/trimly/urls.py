@@ -17,7 +17,6 @@ urlpatterns = [
     path("dashboard/customer/", views.customer_dashboard, name="customer_dashboard"),
     path("logout/", views.logout_view, name="logout"),
      path('dashboard/barber/toggle-availability/', views.toggle_availability, name='toggle_availability'),
-]
     
     # Booking actions (POST only)
     path("bookings/<int:booking_id>/cancel/", views.cancel_booking_view, name="cancel_booking"),
