@@ -1,192 +1,593 @@
 /* ==========================================================================
    Customer dashboard
-   - Navbar reuse + welcome text
-   - Header section
-   - Booking steps layout
-   - Service cards
-   - Barber list
-   - Time slots
-   - Book button and messages
+   - Fully Themed using base.css variables (var(--brand), var(--accent))
    ========================================================================== */
 
 /* Base page color (inherits font from base.css) */
 body {
-  color: var(--text);
-  background: #faf9f7;
+  color: var(--text); /* Using base text color */
+  background: #f7f7f7;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding: 0;
 }
 
-/* Optional welcome text styling */
-.welcome-message {
-  font-size: 15px;
-  color: #473a3a;
+/* Header Section - Themed with Trimly Brand Colors */
+#header {
+  /* Using a gradient based on the brown brand color for a premium feel */
+  background: linear-gradient(135deg, var(--brand) 0%, #a0522d 100%);
+  color: white;
+  padding: 40px 20px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
-/* Header section */
 #header .header-content {
-  /* Box */
-  max-width: 100%;
-  margin-left: 24px;
-  padding: 24px;
-
-  /* Typography */
-  text-align: left;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-/* Booking layout */
-.booking-container {
-  display: flex;
-  justify-content: center;
+#header h1 {
+  margin: 0 0 10px 0;
+  font-size: 32px;
+  font-weight: 600;
+}
+
+.welcome-message {
+  font-size: 16px;
+  opacity: 0.95;
+  margin: 0;
+}
+
+.logout-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background 0.3s ease;
+}
+
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Dashboard Wrapper - Two Column Layout */
+.dashboard-wrapper {
+  max-width: 1400px;
+  margin: 30px auto;
+  padding: 0 20px;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
   gap: 30px;
-  padding: 20px;
 }
 
-.step-card {
-  /* Flex item */
-  flex: 0 0 20%;
-
-  /* Card */
-  background: #fff;
+/* Bookings Section (Left Column) */
+.bookings-section {
+  background: white;
   border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  padding: 30px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
-/* Services */
-.service-info {
+.bookings-section h2 {
+  margin: 0 0 25px 0;
+  font-size: 28px;
+  color: var(--text); /* Using base text color */
+  border-bottom: 3px solid var(--brand); /* Themed separator */
+  padding-bottom: 10px;
+}
+
+.bookings-category {
+  margin-bottom: 40px;
+}
+
+.bookings-category h3 {
+  font-size: 20px;
+  color: var(--muted); /* Themed subdued color */
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+}
+
+.bookings-category h3::before {
+  content: '';
+  width: 4px;
+  height: 20px;
+  background: var(--brand); /* Themed marker */
+  margin-right: 10px;
+}
+
+/* Booking Cards (Original styles retained, only border/shadow adjusted if needed) */
+.bookings-list {
   display: flex;
   flex-direction: column;
+  gap: 15px;
 }
 
-.service-btn {
-  /* Box */
-  width: 100%;
-  margin: 8px 0;
-  padding: 12px 16px;
-  border: 1px solid #e6e6e6;
-  border-radius: 8px;
-
-  /* Visual */
-  background: #fdfdfd;
-
-  /* Interaction */
+.booking-card {
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 20px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
   cursor: pointer;
-  transition: background 0.2s ease;
 }
 
-.service-btn:hover {
+.booking-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.booking-card.past-booking {
+  opacity: 0.75;
   background: #f5f5f5;
 }
 
-/* Barbers */
-.barber-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.barber {
-  /* Box */
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-
-  /* Visual */
-  background: #fdfdfd;
-
-  /* Interaction */
+.booking-header {
   display: flex;
   justify-content: space-between;
-  cursor: pointer;
+  align-items: center;
+  margin-bottom: 15px;
 }
 
-.barber.available span {
-  color: var(--brand);
+.service-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.booking-status {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* Status colors retained for practical use (green for confirmed, etc.) */
+.status-confirmed {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-cancelled {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.status-completed {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.status-rescheduled {
+  background: #e2d9f3;
+  color: #5a32a3;
+}
+
+.booking-details p {
+  margin: 8px 0;
   font-size: 14px;
+  color: var(--muted);
 }
 
-.barber.unavailable {
-  background: #f2f2f2;
-  color: #999;
-  cursor: not-allowed;
+.booking-details strong {
+  color: var(--text);
+  font-weight: 600;
 }
 
-/* Date/time selection */
-.calendar {
-  display: grid;
-  gap: 8px;
+/* Booking Actions */
+.booking-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+  flex-wrap: wrap;
 }
 
-.time-slots {
-  margin-top: 16px;
-}
-
-.time-slots > p {
-  margin: 0 0 6px;
-}
-
-.slots {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-
-.slots button {
-  /* Box */
-  padding: 8px;
-  border: 1px solid #ccc;
+.booking-actions button {
+  padding: 8px 16px;
+  border: none;
   border-radius: 6px;
-
-  /* Visual */
-  background: #fff;
-
-  /* Interaction */
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
+  transition: all 0.3s ease;
 }
 
-.slots button:hover {
-  background: #f5f5f5;
+/* Action button colors themed */
+.btn-view {
+  background: var(--brand); 
+  color: white;
 }
 
-.slots button.selected {
-  background: var(--accent);
-  border-color: #d4a017;
-  font-weight: 700;
+.btn-view:hover {
+  background: #a0522d;
 }
 
-/* Booking submit (reuses shared .book-btn styles) */
+.btn-reschedule {
+  background: var(--accent); /* Use accent for secondary action */
+  color: var(--text);
+}
 
-/* Messages/alerts */
+.btn-reschedule:hover {
+  background: #ffe4a1;
+}
+
+.btn-cancel {
+  background: #e74c3c; /* Red retained for cancel */
+  color: white;
+}
+
+.btn-cancel:hover {
+  background: #c0392b;
+}
+
+.btn-view-small {
+  background: #95a5a6;
+  color: white;
+}
+
+.btn-view-small:hover {
+  background: #7f8c8d;
+}
+
+.no-bookings {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+  font-size: 16px;
+  font-style: italic;
+}
+
+/* Detail Panel (Right Column) - Dark Themed Panel (Booking/Details) */
+.detail-panel {
+  background: #4a3e35; /* Dark background, complementary to brown brand */
+  color: #f7f7f7; /* Light text for dark background */
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  position: sticky;
+  top: 20px;
+  height: fit-content;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+}
+
+.detail-panel h3 {
+  margin: 0 0 20px 0;
+  font-size: 24px;
+  color: var(--accent); /* Use accent color for headings */
+  border-bottom: 2px solid var(--accent);
+  padding-bottom: 10px;
+}
+
+.placeholder-text {
+  text-align: center;
+  color: #bbb;
+  font-size: 16px;
+  padding: 40px 20px;
+}
+
+/* Booking Detail View Styles */
+.detail-info p {
+  margin: 14px 0;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #ddd;
+}
+
+.detail-info strong {
+  color: #fff;
+  font-weight: 600;
+  display: inline-block;
+  min-width: 100px;
+}
+
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* Form Groups and Inputs (THEMED) */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #fff; /* White labels on dark background */
+}
+
+.form-group input,
+.booking-form select,
+.booking-form textarea,
+.reschedule-form input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #7a6e65; 
+  border-radius: 6px;
+  font-size: 15px;
+  box-sizing: border-box;
+  background-color: #5d514a; /* Darker input background */
+  color: #fff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-group input:focus,
+.booking-form select:focus,
+.booking-form textarea:focus,
+.reschedule-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(243, 211, 124, 0.5);
+}
+
+.booking-form select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    /* Arrow color set to accent */
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f3d37c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 30px;
+}
+
+.booking-form option {
+    background: #4a3e35;
+    color: #fff;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+/* Button Styles (THEMED) */
+.btn-primary {
+  background: var(--brand); 
+  color: white;
+  padding: 12px 25px; 
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.btn-primary:hover {
+  background: #a0522d; 
+}
+
+.btn-secondary {
+  background: #7a6e65; /* Muted color */
+  color: white;
+  padding: 12px 25px; 
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: #6b5a45; 
+}
+
+/* Messages/Alerts (Original) */
 .messages {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .alert {
-  padding: 10px 14px;
-  border-radius: 6px;
-  margin-bottom: 10px;
+  padding: 15px 20px;
+  border-radius: 8px;
+  margin-bottom: 15px;
   font-size: 14px;
+  font-weight: 500;
 }
 
 .alert-success {
   background: #d4edda;
   color: #155724;
-  border: 1px solid #c3e6cb;
+  border-left: 4px solid #28a745;
 }
 
 .alert-error {
   background: #f8d7da;
   color: #721c24;
-  border: 1px solid #f5c6cb;
+  border-left: 4px solid #dc3545;
 }
 
-/* Responsive layout for booking steps */
-@media (max-width: 960px) {
-  .booking-container {
-    flex-direction: column;
-    gap: 20px;
+/* Responsive Design (Original) */
+@media (max-width: 1024px) {
+  .dashboard-wrapper {
+      grid-template-columns: 1fr;
   }
+  
+  .detail-panel {
+      position: static;
+      max-height: none;
+  }
+}
 
-  .step-card {
-    flex: 1 1 auto;
+@media (max-width: 768px) {
+  #header h1 {
+      font-size: 24px;
   }
+  
+  .welcome-message {
+      font-size: 14px;
+  }
+  
+  .bookings-section {
+      padding: 20px;
+  }
+  
+  .booking-card {
+      padding: 15px;
+  }
+  
+  .booking-actions {
+      flex-direction: column;
+  }
+  
+  .booking-actions button {
+      width: 100%;
+  }
+  
+  .modal-content {
+      margin: 20% auto;
+      padding: 20px;
+  }
+}
+
+/* Additional styles for Python-only version */
+
+.selected {
+  /* Themed selected border using brand color */
+  border: 2px solid var(--brand) !important;
+  box-shadow: 0 4px 12px rgba(var(--brand-rgb-shadow), 0.3) !important; /* Placeholder for custom brand shadow */
+}
+
+.btn-disabled {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  background: #e0e0e0;
+  color: #999;
+  cursor: not-allowed;
+}
+
+.close-alert {
+  float: right;
+  font-size: 20px;
+  font-weight: bold;
+  color: inherit;
+  text-decoration: none;
+  opacity: 0.7;
+  margin-left: 15px;
+}
+
+.close-alert:hover {
+  opacity: 1;
+}
+
+.messages-container {
+  max-width: 1400px;
+  margin: 20px auto;
+  padding: 0 20px;
+}
+
+/* Reschedule Info (THEMED) */
+.current-booking-info {
+  background: #5d514a; 
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid #7a6e65;
+}
+
+.current-booking-info h4 {
+  margin: 0 0 10px 0;
+  color: var(--accent);
+  font-size: 18px;
+}
+
+.current-booking-info p {
+  margin: 5px 0;
+  font-size: 15px;
+  color: #ddd;
+}
+
+.reschedule-form small,
+.booking-form small {
+  display: block;
+  margin-top: 5px;
+  color: var(--accent);
+  font-size: 12px;
+}
+
+.detail-actions {
+  margin-top: 25px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.detail-actions .btn-danger {
+  background: #e74c3c;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: background 0.3s ease;
+}
+
+.detail-actions .btn-danger:hover {
+  background: #c0392b;
+}
+
+.detail-actions a {
+  text-decoration: none;
+}
+
+/* Fix for inline forms */
+.booking-actions form,
+.detail-actions form {
+  margin: 0;
+}
+
+/* Quick Action Bar */
+.quick-action-bar {
+  background: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  padding: 15px 0;
+  margin-bottom: 20px;
+}
+
+.quick-action-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 20px;
+  text-align: center;
+}
+
+/* Quick Action Button - Themed with Brand Gradient */
+.btn-book-new {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--brand) 0%, #a0522d 100%);
+  color: white;
+  padding: 12px 30px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 16px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 10px rgba(165, 42, 42, 0.3); /* Brown shadow */
+}
+
+.btn-book-new:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(165, 42, 42, 0.4);
 }
