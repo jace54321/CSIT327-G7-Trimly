@@ -116,18 +116,24 @@
 
               <div class="booking-actions">
                 {# View details toggles right panel to detail view via query param #}
-                <a href="{% url 'customer_dashboard' %}?view={{ booking.id }}" class="btn-view">View Details</a>
+                <a href="{% url 'customer_dashboard' %}?view={{ booking.id }}" class="btn-primary">View Details</a>
 
                 {# can_be_cancelled is a no-arg boolean method; safe to access as attribute #}
                 {% if booking.can_be_cancelled %}
                   {# Reschedule opens right panel with reschedule form #}
-                  <a href="{% url 'customer_dashboard' %}?reschedule={{ booking.id }}" class="btn-reschedule">Reschedule</a>
-
+                  <a href="{% url 'customer_dashboard' %}?reschedule={{ booking.id }}" class="btn-secondary">Reschedule</a>
+                  
                   {# Cancel submits a POST to cancel endpoint (confirm via JS) #}
-                  <form method="POST" action="{% url 'cancel_booking' booking.id %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to cancel this booking?');">
+                  <form id="cancelForm-{{ booking.id }}" 
+                        method="POST" 
+                        action="{% url 'cancel_booking' booking.id %}" 
+                        style="display: inline;" 
+                        onsubmit="return confirm('Are you sure you want to cancel this booking?');">
                     {% csrf_token %}
-                    <button type="submit" class="btn-cancel">Cancel</button>
                   </form>
+                  <button type="submit" class="btn btn-cancel" form="cancelForm-{{ booking.id }}">
+                    Cancel
+                  </button>
                 {% else %}
                   <span class="btn-disabled">Cannot Cancel</span>
                 {% endif %}
@@ -302,12 +308,18 @@
         {% if selected_booking.can_be_cancelled %}
           <a href="{% url 'customer_dashboard' %}?reschedule={{ selected_booking.id }}" class="btn-primary">Reschedule</a>
 
-          <form method="POST" action="{% url 'cancel_booking' selected_booking.id %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to cancel this booking?');">
-            {% csrf_token %}
-            <button type="submit" class="btn-danger">Cancel Booking</button>
-          </form>
-        {% endif %}
-      </div>
+          {# Cancel submits a POST to cancel endpoint (confirm via JS) #}
+                <form id="cancelForm-{{ booking.id }}" 
+                      method="POST" 
+                      action="{% url 'cancel_booking' booking.id %}" 
+                      style="display: inline;" 
+                      onsubmit="return confirm('Are you sure you want to cancel this booking?');">
+                  {% csrf_token %}
+                </form>
+                <button type="submit" class="btn btn-cancel" form="cancelForm-{{ booking.id }}">
+                  Cancel
+                  </button>
+        </div>
 
     {# ---------- Placeholder (default right panel) ---------- #}
     {% else %}
