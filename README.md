@@ -7,12 +7,16 @@
 
 ## Tech Stack
 
-* **Backend:** Django 5.2.7+
-* **Frontend:** HTML, CSS
-* **Database:** SQLite (local) / PostgreSQL via Supabase (production)
-* **Environment Management:** python-dotenv
-* **Database Adapter:** psycopg2-binary
-* **Supabase Client:** supabase
+| Category | Technology |
+|-----------|-------------|
+| **Backend** | Django 5.2.7+ |
+| **Frontend** | HTML, CSS |
+| **Database (Local)** | SQLite |
+| **Database (Production)** | PostgreSQL (via Supabase) |
+| **Environment Management** | python-dotenv |
+| **Database Adapter** | psycopg2-binary |
+| **Supabase Client** | supabase-py |
+
 
 ## Setup & run instructions
 
