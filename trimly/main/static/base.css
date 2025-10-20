@@ -157,6 +157,20 @@ body {
   transform: translateY(1px);
 }
 
+/* BIG CTA (brand color) */
+.btn-cta {
+  width: 200px;
+  height: 50px;
+  background: var(--brand);
+  color: #ffffff;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.15);
+  font-size: large;
+}
+
+.btn-cta:hover {
+  background: #a0522d;
+  box-shadow: 0 6px 14px rgba(165, 42, 42, 0.25);
+}
 /* Primary CTA (brand color) */
 .btn-primary {
   background: var(--brand);
@@ -202,3 +216,36 @@ body {
 .book-btn:hover {
   background: #a0522d;
 }
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Scroll to Top Button */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Hidden by default */
+#scrollToTopBtn {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #222;
+  color: #fff;
+  text-decoration: none;
+  font-size: 20px;
+  padding: 10px 15px;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  opacity: 0.7;
+  transition: opacity 0.3s, background-color 0.3s;
+  z-index: 999;
+}
+
+#scrollToTopBtn:hover {
+  opacity: 1;
+  background-color: #444;
+}
+
