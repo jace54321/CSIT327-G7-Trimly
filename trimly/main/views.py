@@ -22,12 +22,10 @@ from datetime import datetime, timedelta
 # View to display the landing page
 # -------------------------------
 def landing_view(request):
+    context = {"user": request.user}
     if request.user.is_authenticated:
-        if hasattr(request.user, "barber_profile"):
-            return redirect("barber_dashboard")
-        if hasattr(request.user, "customer_profile"):
-            return redirect("customer_dashboard")
-    return render(request, "landing.html")
+        context["is_logged_in"] = True
+    return render(request, "landing.html", context)
 
 # -------------------------------
 # Handles user registration
