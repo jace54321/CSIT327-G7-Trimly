@@ -342,6 +342,7 @@ body {
     background-repeat: no-repeat;
     background-position: right 10px center;
     padding-right: 30px;
+    text-decoration: none;
 }
 
 .booking-form option {
@@ -366,6 +367,7 @@ body {
   font-weight: 500;
   cursor: pointer;
   transition: background 0.3s ease;
+  text-decoration: none;
 }
 
 .btn-primary:hover {
@@ -382,6 +384,7 @@ body {
   font-weight: 500;
   cursor: pointer;
   transition: background 0.3s ease;
+  text-decoration: none;
 }
 
 .btn-secondary:hover {
@@ -521,6 +524,7 @@ body {
   margin-top: 5px;
   color: var(--accent);
   font-size: 12px;
+  text-decoration: none;
 }
 
 .detail-actions {

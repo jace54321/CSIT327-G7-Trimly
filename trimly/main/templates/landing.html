@@ -11,7 +11,7 @@
 <body>
 
 <!-- Navbar -->
-<header class="navbar">
+<header class="navbar" id="navbar">
   <div class="navbar-left">
       <a href="{% url 'landing' %}" class="logo-link">
         <h1 class="logo">Trimly</h1>
@@ -45,7 +45,7 @@
 
 
   <!-- Hero -->
-  <section class="hero">
+  <section class="hero" id="hero">
     <div class="hero-inner">
       <h2 class="hero-title">
         Premium Barbershop <span class="hero-accent">Experience</span>
@@ -55,7 +55,7 @@
       </p>
       <div class="hero-cta">
         {% if user.is_authenticated %}
-          <button onclick="location.href='#contact'" class="btn btn-primary">Book Now</button>
+          <button onclick="location.href='#contact'" class="btn btn-cta">Book Now</button>
         {% else %}
           <button onclick="location.href='{% url 'register' %}'" class="btn btn-light">Get Started</button>
           <button onclick="location.href='{% url 'login' %}'" class="btn btn-primary">Sign In</button>
@@ -131,5 +131,23 @@
   <footer class="site-footer">
     <small>© {{ now|date:"Y" }} Trimly. All rights reserved.</small>
   </footer>
+
+  <!-- Scroll to Top Button -->
+    <a href="#navbar" id="scrollToTopBtn" title="Go to top">↑</a>
+
+  <script>
+    // Get the button
+    const scrollToTopBtn = document.getElementById("scrollToTopBtn");
+
+    // Listen for scroll events
+    window.addEventListener("scroll", () => {
+      if (window.scrollY > 200) { // Show when scrolled down 200px
+        scrollToTopBtn.style.display = "block";
+      } else {
+        scrollToTopBtn.style.display = "none";
+      }
+    });
+  </script>
+
 </body>
 </html>
