@@ -35,8 +35,9 @@
         <button type="submit" class="btn btn-glass">Book Now</button>
       </form>
     {% else %}
-      <a href="{% url 'register' %}" class="btn btn-light">Get Started</a>
-      <a href="{% url 'login' %}" class="btn btn-glass">Book Now</a>
+    <!--Get Started seems redundant-->
+      <a href="{% url 'auth' %}" class="btn btn-light">Get Started</a>
+      <a href="{% url 'auth' %}" class="btn btn-glass">Book Now</a>
     {% endif %}
   </div>
 </header>
@@ -55,7 +56,7 @@
       {% if user.is_authenticated %}
         <a href="{% if user.barber %}{% url 'barber_dashboard' %}{% else %}{% url 'customer_dashboard' %}{% endif %}" class="btn btn-glass">Book Appointment</a>
       {% else %}
-        <a href="{% url 'login' %}" class="btn btn-glass">Book Appointment</a>
+        <a href="{% url 'auth' %}" class="btn btn-glass">Book Appointment</a>
       {% endif %}
     </div>
   </div>

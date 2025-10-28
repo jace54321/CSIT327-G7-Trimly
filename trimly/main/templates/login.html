@@ -1,78 +1,172 @@
-{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - Trimly</title>
-  <link rel="stylesheet" href="{% static 'base.css' %}">
-  <link rel="stylesheet" href="{% static 'login.css' %}">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Premium Grooming</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'base.css' %}">
+    <link rel="stylesheet" href="{% static 'login.css' %}">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-  <!-- Navbar -->
-  <section id="navbar">
-    <nav class="navbar">
-      <div class="navbar-left">
-        <h1 class="logo">Trimly</h1>
-      </div>
+    <!-- Navbar -->
+    <nav class="navbar navbar-glass">
+        <div class="navbar-left">
+            <a href="landing.html" class="logo-link">
+                <div class="brand-mark">✂</div>
+                <h1 class="logo">TRIMLY</h1>
+            </a>
+        </div>
+        <div class="navbar-right">
+            <a href="registration.html" class="btn btn-light">Sign Up</a>
+        </div>
     </nav>
-  </section>
 
-  <!-- Login Card -->
-  <section class="login-container">
-    <div class="login-card">
-      <h2 style="text-align:center; margin-bottom:18px;">Login</h2>
+    <!-- Login Container -->
+    <div class="login-container">
+        <div class="login-card">
+            <h2>Welcome Back</h2>
+            <p>Sign in to your account</p>
 
-      {% if error %}
-        <p style="color: red; text-align:center;">{{ error }}</p>
-      {% endif %}
+            <!-- Error/Success Messages -->
+            <div class="error-message" id="errorMessage">
+                <i class="fas fa-exclamation-circle"></i>
+                <span id="errorText"></span>
+            </div>
+            <div class="success-message" id="successMessage">
+                <i class="fas fa-check-circle"></i>
+                <span id="successText"></span>
+            </div>
 
-      <form action="/login/" method="POST">
-        {% csrf_token %}
-        <div class="form-group">
-          <label for="email">Email</label>
-          <input type="email" id="email" name="email" required>
+            <!-- Login Form -->
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        placeholder="Enter your email"
+                        required
+                        autocomplete="email"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="password-wrapper">
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            placeholder="Enter your password"
+                            required
+                            autocomplete="current-password"
+                        >
+                        <span class="toggle-password" onclick="togglePassword()">
+                            <i class="fas fa-eye" id="toggleIcon"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="remember-me">
+                    <input type="checkbox" id="remember" name="remember">
+                    <label for="remember">Remember me</label>
+                </div>
+
+                <div class="forgot-password">
+                    <a href="#">Forgot password?</a>
+                </div>
+
+                <button type="submit" class="book-btn">Sign In</button>
+            </form>
+
+            <div class="divider">Or continue with</div>
+
+            <!-- Social Login -->
+            <div class="social-login">
+                <a href="#" class="social-btn google">
+                    <i class="fab fa-google"></i>
+                    Continue with Google
+                </a>
+                <a href="#" class="social-btn facebook">
+                    <i class="fab fa-facebook-f"></i>
+                    Continue with Facebook
+                </a>
+            </div>
+
+            <!-- Sign Up Link -->
+            <div class="signup-link">
+                Don't have an account? <a href="registration.html">Sign up</a>
+            </div>
         </div>
-        <div class="form-group">
-          <label for="password">Password</label>
-          <input type="password" id="password" name="password" required>
-        </div>
-        <button type="submit" class="book-btn" style="margin-top:16px;">Login</button>
-      </form>
-      
-    {% if wrong_password or user_not_found %}
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      {% if wrong_password %}
-      const passwordField = document.getElementById('password');
-      if (passwordField) {
-        passwordField.setCustomValidity("Incorrect password. Please try again.");
-        passwordField.reportValidity();
-        passwordField.focus();
-        passwordField.addEventListener('input', () => passwordField.setCustomValidity(''));
-      }
-      {% endif %}
-
-      {% if user_not_found %}
-      const emailField = document.getElementById('email');
-      if (emailField) {
-        emailField.setCustomValidity("No account found with this email.");
-        emailField.reportValidity();
-        emailField.focus();
-        emailField.addEventListener('input', () => emailField.setCustomValidity(''));
-      }
-      {% endif %}
-    });
-    </script>
-    {% endif %}
-
-
-
-      <p style="text-align:center; margin-top:10px;">
-        Don't have an account? <a href="{% url 'register' %}">Register here</a>
-      </p>
     </div>
-  </section>
+
+    <!-- JavaScript -->
+    <script>
+        // Toggle password visibility
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.getElementById('toggleIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
+
+        // Form submission
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const submitBtn = this.querySelector('.book-btn');
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            // Add loading state
+            submitBtn.classList.add('loading');
+            submitBtn.disabled = true;
+            
+            // Simulate API call (replace with actual authentication)
+            setTimeout(() => {
+                submitBtn.classList.remove('loading');
+                submitBtn.disabled = false;
+                
+                // Show success or error message
+                showMessage('success', 'Login successful! Redirecting...');
+                
+                // Redirect after successful login
+                setTimeout(() => {
+                    window.location.href = 'customer_dashboard';
+                }, 1500);
+            }, 2000);
+        });
+
+        // Message display function
+        function showMessage(type, text) {
+            const errorMsg = document.getElementById('errorMessage');
+            const successMsg = document.getElementById('successMessage');
+            
+            if (type === 'error') {
+                document.getElementById('errorText').textContent = text;
+                errorMsg.classList.add('show');
+                successMsg.classList.remove('show');
+            } else {
+                document.getElementById('successText').textContent = text;
+                successMsg.classList.add('show');
+                errorMsg.classList.remove('show');
+            }
+        }
+    </script>
 </body>
 </html>
