@@ -298,6 +298,7 @@ body {
     background-repeat: no-repeat;
     background-position: right 10px center;
     padding-right: 30px;
+    text-decoration: none;
 }
 
 .booking-form option {
@@ -311,6 +312,43 @@ body {
   justify-content: flex-end;
 }
 
+<<<<<<< HEAD
+=======
+/* Button Styles (THEMED) */
+.btn-primary {
+  background: var(--brand); 
+  color: white;
+  padding: 12px 25px; 
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  text-decoration: none;
+}
+
+.btn-primary:hover {
+  background: #a0522d; 
+}
+
+.btn-secondary {
+  background: #7a6e65; /* Muted color */
+  color: white;
+  padding: 12px 25px; 
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  text-decoration: none;
+}
+
+.btn-secondary:hover {
+  background: #6b5a45; 
+}
+>>>>>>> origin/main
 
 /* Messages/Alerts (Original) */
 .messages {
@@ -448,6 +486,7 @@ body {
   margin-top: 5px;
   color: var(--accent);
   font-size: 12px;
+  text-decoration: none;
 }
 
 .detail-actions {
