@@ -8,6 +8,7 @@ urlpatterns = [
     
     # Landing & Auth
     path("", views.landing_view, name="landing"),
+    path('auth/', views.auth_view, name='auth'),  # Single page for both
     path("login/", views.login_view, name="login"),
     path("register/", views.registration_view, name="register"),
     path("logout/", views.logout_view, name="logout"),
@@ -16,7 +17,7 @@ urlpatterns = [
     path("dashboard/barber/", views.barber_dashboard, name="barber_dashboard"),
     path("dashboard/customer/", views.customer_dashboard, name="customer_dashboard"),
     path("logout/", views.logout_view, name="logout"),
-     path('dashboard/barber/toggle-availability/', views.toggle_availability, name='toggle_availability'),
+    path('dashboard/barber/toggle-availability/', views.toggle_availability, name='toggle_availability'),
     
     # Booking actions (POST only)
     path("bookings/<int:booking_id>/cancel/", views.cancel_booking_view, name="cancel_booking"),

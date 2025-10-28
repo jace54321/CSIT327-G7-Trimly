@@ -1,0 +1,360 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In / Sign Up - TRIMLY</title>
+    <link rel="stylesheet" href="{% static 'base.css' %}">
+    <link rel="stylesheet" href="{% static 'auth.css' %}">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-glass">
+        <div class="navbar-left">
+            <a href="{% url 'landing' %}" class="logo-link">
+                <div class="brand-mark">✂</div>
+                <h1 class="logo">TRIMLY</h1>
+            </a>
+        </div>
+        <div class="navbar-right">
+            <a href="{% url 'landing' %}" class="btn btn-ghost">Back to Home</a>
+        </div>
+    </nav>
+
+    <!-- Auth Container -->
+    <div class="auth-container">
+        <div class="auth-card">
+            <!-- Tab Switcher -->
+            <div class="auth-tabs">
+                <button class="auth-tab {% if not show_register %}active{% endif %}" data-tab="login" onclick="switchTab('login')">
+                    Sign In
+                </button>
+                <button class="auth-tab {% if show_register %}active{% endif %}" data-tab="register" onclick="switchTab('register')">
+                    Sign Up
+                </button>
+                <div class="tab-indicator {% if show_register %}register{% endif %}"></div>
+            </div>
+
+            <!-- Django Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="{% if message.tags == 'error' %}error-message{% else %}success-message{% endif %} show">
+                        <i class="fas fa-{% if message.tags == 'error' %}exclamation-circle{% else %}check-circle{% endif %}"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Login Form -->
+            <form id="loginForm" method="POST" action="{% url 'login' %}" class="auth-form {% if not show_register %}active{% endif %}">
+                {% csrf_token %}
+                
+                <h2>Welcome Back</h2>
+                <p>Sign in to your account</p>
+
+                <div class="form-group">
+                    <label for="login-email">Email Address</label>
+                    <input 
+                        type="email" 
+                        id="login-email" 
+                        name="email" 
+                        placeholder="Enter your email"
+                        required
+                        autocomplete="email"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <div class="password-wrapper">
+                        <input 
+                            type="password" 
+                            id="login-password" 
+                            name="password" 
+                            placeholder="Enter your password"
+                            required
+                            autocomplete="current-password"
+                        >
+                        <span class="toggle-password" onclick="togglePassword('login-password', 'loginToggleIcon')">
+                            <i class="fas fa-eye" id="loginToggleIcon"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="remember-me">
+                    <input type="checkbox" id="remember" name="remember">
+                    <label for="remember">Remember me</label>
+                </div>
+
+                <div class="forgot-password">
+                    <a href="#">Forgot password?</a>
+                </div>
+
+                <button type="submit" class="book-btn">Sign In</button>
+
+                <div class="divider">Or continue with</div>
+
+                <!-- Social Login -->
+                <div class="social-login">
+                    <a href="#" class="social-btn google">
+                        <i class="fab fa-google"></i>
+                        Continue with Google
+                    </a>
+                    <a href="#" class="social-btn facebook">
+                        <i class="fab fa-facebook-f"></i>
+                        Continue with Facebook
+                    </a>
+                </div>
+            </form>
+
+            <!-- Registration Form -->
+            <form id="registerForm" method="POST" action="{% url 'register' %}" class="auth-form {% if show_register %}active{% endif %}">
+                {% csrf_token %}
+                
+                <h2>Create Account</h2>
+                <p>Join us for premium grooming</p>
+
+                <!-- Username Field -->
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input 
+                        type="text" 
+                        id="username" 
+                        name="username" 
+                        placeholder="Choose a username"
+                        required
+                        value="{{ request.POST.username|default:'' }}"
+                    >
+                </div>
+
+                <!-- Email Field -->
+                <div class="form-group">
+                    <label for="register-email">Email Address</label>
+                    <input 
+                        type="email" 
+                        id="register-email" 
+                        name="email" 
+                        placeholder="your.email@example.com"
+                        required
+                        autocomplete="email"
+                        value="{{ request.POST.email|default:'' }}"
+                    >
+                </div>
+
+                <!-- First Name Field -->
+                <div class="form-group">
+                    <label for="first-name">First Name</label>
+                    <input 
+                        type="text" 
+                        id="first-name" 
+                        name="first_name" 
+                        placeholder="John"
+                        required
+                        value="{{ request.POST.first_name|default:'' }}"
+                    >
+                </div>
+
+                <!-- Last Name Field -->
+                <div class="form-group">
+                    <label for="last-name">Last Name</label>
+                    <input 
+                        type="text" 
+                        id="last-name" 
+                        name="last_name" 
+                        placeholder="Doe"
+                        required
+                        value="{{ request.POST.last_name|default:'' }}"
+                    >
+                </div>
+
+                <!-- Phone Number Field -->
+                <div class="form-group">
+                    <label for="phone-number">Phone Number</label>
+                    <input 
+                        type="tel" 
+                        id="phone-number" 
+                        name="phone_number" 
+                        placeholder="09123456789"
+                        required
+                        pattern="09[0-9]{9}"
+                        title="Phone number must start with 09 and contain exactly 11 digits"
+                        value="{{ request.POST.phone_number|default:'' }}"
+                    >
+                    <small>Format: 09123456789 (11 digits starting with 09)</small>
+                </div>
+
+                <!-- Password Field with Validation -->
+                <div class="form-group">
+                    <label for="register-password">Password</label>
+                    <div class="password-wrapper">
+                        <input 
+                            type="password" 
+                            id="register-password" 
+                            name="password" 
+                            placeholder="Create a strong password"
+                            required
+                            autocomplete="new-password"
+                            minlength="8"
+                        >
+                        <span class="toggle-password" onclick="togglePassword('register-password', 'registerToggleIcon')">
+                            <i class="fas fa-eye" id="registerToggleIcon"></i>
+                        </span>
+                    </div>
+                    <ul class="password-requirements">
+                        <li id="length">At least 8 characters</li>
+                        <li id="uppercase">One uppercase letter</li>
+                        <li id="lowercase">One lowercase letter</li>
+                        <li id="number">One number</li>
+                    </ul>
+                </div>
+
+                <!-- Confirm Password Field -->
+                <div class="form-group">
+                    <label for="confirm-password">Confirm Password</label>
+                    <div class="password-wrapper">
+                        <input 
+                            type="password" 
+                            id="confirm-password" 
+                            name="confirm-password" 
+                            placeholder="Re-enter your password"
+                            required
+                            autocomplete="new-password"
+                        >
+                        <span class="toggle-password" onclick="togglePassword('confirm-password', 'confirmToggleIcon')">
+                            <i class="fas fa-eye" id="confirmToggleIcon"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Role Selection -->
+                <div class="form-group">
+                    <label>I am a:</label>
+                    <div class="role-selection">
+                        <label class="role-box">
+                            <input type="radio" name="role" value="customer" required>
+                            <i class="fas fa-user"></i>
+                            <p>Customer</p>
+                        </label>
+                        <label class="role-box">
+                            <input type="radio" name="role" value="barber">
+                            <i class="fas fa-cut"></i>
+                            <p>Barber</p>
+                        </label>
+                    </div>
+                </div>
+
+                <button type="submit" class="book-btn">Create Account</button>
+
+                <div class="divider">Or continue with</div>
+
+                <!-- Social Login -->
+                <div class="social-login">
+                    <a href="#" class="social-btn google">
+                        <i class="fab fa-google"></i>
+                        Continue with Google
+                    </a>
+                    <a href="#" class="social-btn facebook">
+                        <i class="fab fa-facebook-f"></i>
+                        Continue with Facebook
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // Tab switching (client-side only for UX)
+        function switchTab(tabName) {
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const loginTab = document.querySelector('[data-tab="login"]');
+            const registerTab = document.querySelector('[data-tab="register"]');
+            const indicator = document.querySelector('.tab-indicator');
+            
+            if (tabName === 'login') {
+                loginForm.classList.add('active');
+                registerForm.classList.remove('active');
+                loginTab.classList.add('active');
+                registerTab.classList.remove('active');
+                indicator.classList.remove('register');
+            } else {
+                registerForm.classList.add('active');
+                loginForm.classList.remove('active');
+                registerTab.classList.add('active');
+                loginTab.classList.remove('active');
+                indicator.classList.add('register');
+            }
+        }
+
+        // Toggle password visibility (UI enhancement only)
+        function togglePassword(inputId, iconId) {
+            const passwordInput = document.getElementById(inputId);
+            const toggleIcon = document.getElementById(iconId);
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
+
+        // Password validation visual feedback
+        const registerPasswordInput = document.getElementById('register-password');
+        if (registerPasswordInput) {
+            registerPasswordInput.addEventListener('input', function() {
+                const password = this.value;
+                
+                document.getElementById('length').classList.toggle('valid', password.length >= 8);
+                document.getElementById('uppercase').classList.toggle('valid', /[A-Z]/.test(password));
+                document.getElementById('lowercase').classList.toggle('valid', /[a-z]/.test(password));
+                document.getElementById('number').classList.toggle('valid', /[0-9]/.test(password));
+            });
+        }
+
+        // Password match validation
+        const confirmPasswordInput = document.getElementById('confirm-password');
+        if (confirmPasswordInput && registerPasswordInput) {
+            confirmPasswordInput.addEventListener('input', function() {
+                if (this.value !== registerPasswordInput.value) {
+                    this.setCustomValidity('Passwords do not match');
+                } else {
+                    this.setCustomValidity('');
+                }
+            });
+            
+            registerPasswordInput.addEventListener('input', function() {
+                if (confirmPasswordInput.value && confirmPasswordInput.value !== this.value) {
+                    confirmPasswordInput.setCustomValidity('Passwords do not match');
+                } else {
+                    confirmPasswordInput.setCustomValidity('');
+                }
+            });
+        }
+
+        // Check if we should show register form based on URL or context
+        window.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const mode = urlParams.get('mode');
+            
+            {% if show_register %}
+                switchTab('register');
+            {% endif %}
+            
+            if (mode === 'register' || mode === 'signup') {
+                switchTab('register');
+            }
+        });
+    </script>
+</body>
+</html>

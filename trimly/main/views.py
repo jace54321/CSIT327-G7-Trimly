@@ -10,13 +10,11 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.core.validators import EmailValidator
 from django.http import JsonResponse
-from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.decorators import login_required
-from .models import Barber
 import json
 from django.utils import timezone
 from datetime import datetime, timedelta
+
 
 # -------------------------------
 # View to display the landing page
@@ -26,6 +24,20 @@ def landing_view(request):
     if request.user.is_authenticated:
         context["is_logged_in"] = True
     return render(request, "landing.html", context)
+
+
+# -------------------------------
+# Merged auth page view
+# -------------------------------
+def auth_view(request):
+    """Render the merged auth page with context for showing correct form"""
+    # Check if we should show register form based on URL parameter
+    show_register = request.GET.get('mode') == 'register'
+    
+    return render(request, "auth.html", {
+        'show_register': show_register
+    })
+
 
 # -------------------------------
 # Handles user registration
@@ -43,6 +55,7 @@ def registration_view(request):
 
         errors = []
 
+        # Validation
         if not all([username, email, first_name, last_name, phone_number, password, confirm_password, role]):
             errors.append("All fields are required.")
 
@@ -84,7 +97,8 @@ def registration_view(request):
         if errors:
             for error in errors:
                 messages.error(request, error)
-            return render(request, 'registration.html')
+            # FIXED: Use redirect with query parameter properly
+            return redirect('/auth/?mode=register')
 
         try:
             user = User.objects.create_user(
@@ -99,17 +113,27 @@ def registration_view(request):
             
             if role == "barber":
                 Barber.objects.create(user=user, phone_number=clean_phone)
+                redirect_url = "barber_dashboard"
             elif role == "customer":
                 Customer.objects.create(user=user, phone_number=clean_phone)
+                redirect_url = "customer_dashboard"
+            else:
+                redirect_url = "landing"
             
-            messages.success(request, "Registration successful! You can now log in.")
-            return redirect("login")
+            # Automatically log the user in
+            login(request, user)
+            
+            messages.success(request, "Registration successful! Welcome!")
+            return redirect(redirect_url)
         
         except IntegrityError:
             messages.error(request, "Registration unsuccessful! Please try again.")
-            return render(request, 'registration.html')
+            # FIXED: Use redirect with query parameter properly
+            return redirect('/auth/?mode=register')
     
-    return render(request, 'registration.html')
+    # FIXED: GET request - redirect to auth page with register mode
+    return redirect('/auth/?mode=register')
+
 
 # -------------------------------
 # Handles user login
@@ -132,7 +156,8 @@ def login_view(request):
                 username = None
         
         if not user_exists:
-            return render(request, "login.html", {"user_not_found": True})
+            messages.error(request, 'User not found. Please check your email or username.')
+            return redirect('auth')
         
         user = authenticate(request, username=username, password=password)
         
@@ -142,15 +167,21 @@ def login_view(request):
                 return redirect("barber_dashboard")
             elif hasattr(user, "customer_profile"):
                 return redirect("customer_dashboard")
+            else:
+                return redirect("landing")
         
-        return render(request, "login.html", {"wrong_password": True})
+        messages.error(request, 'Invalid password. Please try again.')
+        return redirect('auth')
     
-    return render(request, "login.html")
+    # GET request - redirect to auth page
+    return redirect('auth')
+
+
 
 # -------------------------------
-# Customer dashboard (Python-only)
+# Customer dashboard
 # -------------------------------
-@login_required(login_url='login')
+@login_required(login_url='auth')
 def customer_dashboard(request):
     try:
         customer = request.user.customer_profile
@@ -205,19 +236,7 @@ def customer_dashboard(request):
                 messages.error(request, "Booking not found.")
                 return redirect('customer_dashboard')
         
-        context = {
-            'customer': customer,
-            'upcoming_bookings': upcoming_bookings,
-            'past_bookings': past_bookings,
-            'services': services,
-            'barbers': barbers,
-            'now': now,
-            'today': timezone.now().date(),
-            'selected_booking': selected_booking,
-            'reschedule_booking': reschedule_booking,
-        }
-        
-         # NEW: Check if showing booking form
+        # Check if showing booking form
         show_booking_form = request.GET.get('action') == 'book'
         
         context = {
@@ -230,17 +249,20 @@ def customer_dashboard(request):
             'today': timezone.now().date(),
             'selected_booking': selected_booking,
             'reschedule_booking': reschedule_booking,
-            'show_booking_form': show_booking_form,  # NEW
+            'show_booking_form': show_booking_form,
         }
         
         return render(request, "customer_dashboard.html", context)
     
     except Customer.DoesNotExist:
         messages.error(request, "Customer profile not found. Please contact support.")
-        return redirect("login")
+        return redirect("auth")
 
-        
-@login_required(login_url='login')
+
+# -------------------------------
+# Create new booking
+# -------------------------------
+@login_required(login_url='auth')
 def create_booking_view(request):
     """Create a new booking"""
     if request.method != 'POST':
@@ -259,7 +281,7 @@ def create_booking_view(request):
         # Validate required fields
         if not all([service_id, barber_id, appointment_date_str, appointment_time_str]):
             messages.error(request, 'All fields are required.')
-            return redirect('customer_dashboard', '?action=book')
+            return redirect('customer_dashboard' + '?action=book')
         
         # Get service and barber
         service = get_object_or_404(ServiceType, id=service_id, is_active=True)
@@ -272,17 +294,17 @@ def create_booking_view(request):
             appointment_datetime = timezone.make_aware(datetime.combine(appointment_date, appointment_time))
         except ValueError:
             messages.error(request, 'Invalid date or time format.')
-            return redirect('customer_dashboard', '?action=book')
+            return redirect('customer_dashboard' + '?action=book')
         
         # Validate appointment is in the future
         if appointment_datetime < timezone.now():
             messages.error(request, 'Cannot book appointments in the past.')
-            return redirect('customer_dashboard', '?action=book')
+            return redirect('customer_dashboard' + '?action=book')
         
         # Validate business hours (9 AM - 6 PM)
         if appointment_time.hour < 9 or appointment_time.hour >= 18:
             messages.error(request, 'Please select a time between 9:00 AM and 6:00 PM.')
-            return redirect('customer_dashboard', '?action=book')
+            return redirect('customer_dashboard' + '?action=book')
         
         # Create reservation
         reservation = Reservation.objects.create(
@@ -304,11 +326,15 @@ def create_booking_view(request):
     
     except Customer.DoesNotExist:
         messages.error(request, 'Customer profile not found.')
-        return redirect('login')
+        return redirect('auth')
     except Exception as e:
         messages.error(request, f'An error occurred: {str(e)}')
-        return redirect('customer_dashboard', '?action=book')
+        return redirect('customer_dashboard' + '?action=book')
 
+
+# -------------------------------
+# Toggle barber availability (AJAX)
+# -------------------------------
 @login_required
 @csrf_exempt
 def toggle_availability(request):
@@ -325,10 +351,11 @@ def toggle_availability(request):
             return JsonResponse({"success": False, "error": "Barber not found"}, status=404)
     return JsonResponse({"success": False, "error": "Invalid request"}, status=400)
 
+
 # -------------------------------
 # Cancel booking (POST only)
 # -------------------------------
-@login_required(login_url='login')
+@login_required(login_url='auth')
 def cancel_booking_view(request, booking_id):
     if request.method != 'POST':
         return redirect('customer_dashboard')
@@ -364,10 +391,11 @@ def cancel_booking_view(request, booking_id):
     
     return redirect('customer_dashboard')
 
+
 # -------------------------------
 # Reschedule booking (POST only)
 # -------------------------------
-@login_required(login_url='login')
+@login_required(login_url='auth')
 def reschedule_booking_view(request, booking_id):
     if request.method != 'POST':
         return redirect('customer_dashboard')
@@ -391,7 +419,7 @@ def reschedule_booking_view(request, booking_id):
         
         if not new_date_str or not new_time_str:
             messages.error(request, 'Date and time are required.')
-            return redirect('customer_dashboard', f'?reschedule={booking_id}')
+            return redirect('customer_dashboard' + f'?reschedule={booking_id}')
         
         try:
             # Parse datetime
@@ -402,12 +430,12 @@ def reschedule_booking_view(request, booking_id):
             # Validate that new datetime is in the future
             if new_datetime < timezone.now():
                 messages.error(request, 'Cannot reschedule to a past date/time.')
-                return redirect('customer_dashboard', f'?reschedule={booking_id}')
+                return redirect('customer_dashboard' + f'?reschedule={booking_id}')
             
             # Validate business hours (9 AM - 6 PM)
             if new_time.hour < 9 or new_time.hour >= 18:
                 messages.error(request, 'Please select a time between 9:00 AM and 6:00 PM.')
-                return redirect('customer_dashboard', f'?reschedule={booking_id}')
+                return redirect('customer_dashboard' + f'?reschedule={booking_id}')
             
             # Update booking
             old_datetime = booking.appointment_datetime
@@ -421,7 +449,7 @@ def reschedule_booking_view(request, booking_id):
         
         except ValueError:
             messages.error(request, 'Invalid date or time format.')
-            return redirect('customer_dashboard', f'?reschedule={booking_id}')
+            return redirect('customer_dashboard' + f'?reschedule={booking_id}')
     
     except Customer.DoesNotExist:
         messages.error(request, 'Customer profile not found.')
@@ -430,19 +458,22 @@ def reschedule_booking_view(request, booking_id):
     
     return redirect('customer_dashboard')
 
+
 # -------------------------------
 # Barber dashboard
 # -------------------------------
-@login_required(login_url='login')
+@login_required(login_url='auth')
 def barber_dashboard(request):
     return render(request, "barber_dashboard.html")
+
 
 # -------------------------------
 # Logout
 # -------------------------------
 def logout_view(request):
     logout(request)
-    return redirect("login")
+    return redirect("auth")
+
 
 # -------------------------------
 # Phone number validator
@@ -459,4 +490,3 @@ def validate_phone_number(phone_number):
         )
     
     return clean_phone
-

@@ -1,71 +1,386 @@
 /* ==========================================================================
-   Login page
-   - Layout container
-   - Card
-   - Form inputs
-   - Submit button reuse
-   ========================================================================== */
+   Login page - Aligned with landing page design system
+========================================================================== */
 
-/* Page background and base color (font inherits from base.css) */
+/* Page background matches dark theme */
 body {
-  color: var(--text);
-  background: #faf9f7;
+  color: var(--text-on-dark);
+  background: linear-gradient(#0e121a, #101520);
+  min-height: 100vh;
 }
 
-/* Layout */
+/* Layout - centered with proper spacing */
 .login-container {
   display: flex;
   align-items: center;
   justify-content: center;
-
-  /* Occupy viewport height minus navbar if present */
-  min-height: 80vh;
+  min-height: calc(100vh - var(--navbar-h));
+  padding: 40px 20px;
 }
 
-/* Card */
+/* Card - glass morphism matching landing page style */
 .login-card {
-  /* Box */
   width: 100%;
-  max-width: 350px;
-  padding: 32px 28px 24px;
-
-  /* Visual */
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  max-width: 420px;
+  padding: 40px 36px 32px;
+  
+  /* Glass effect matching services cards */
+  background: rgba(20, 20, 22, .36);
+  border: 1px solid rgba(255, 255, 255, .08);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 18px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 18px 40px rgba(0, 0, 0, .45);
+  
+  transition: box-shadow .3s ease, border-color .3s ease;
 }
 
-/* Form */
-.form-group {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 16px;
+.login-card:hover {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 26px 60px rgba(0, 0, 0, .55);
+  border-color: rgba(255, 255, 255, .14);
 }
 
-.form-group label {
-  margin-bottom: 6px;
-  font-weight: 500;
-  color: var(--text);
+/* Title styling */
+.login-card h2 {
+  font-family: "Playfair Display", serif;
+  font-weight: 900;
+  font-size: clamp(30px, 4vw, 38px);
+  margin: 0 0 8px;
+  color: #f5f3ef;
+  text-align: center;
 }
 
-.form-group input {
-  /* Box */
-  padding: 10px;
-  border: 1px solid #e6e6e6;
-  border-radius: 6px;
-
-  /* Visual */
-  background: #faf9f7;
-  color: var(--text);
-
-  /* Text */
+.login-card p {
+  text-align: center;
+  color: var(--muted-on-dark);
+  margin: 0 0 28px;
   font-size: 15px;
 }
 
-.form-group input:focus {
-  outline: none;
-  border-color: var(--accent);
-  background: #fffbe6;
+/* Form groups */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
 }
 
-/* Submit button uses .book-btn from base.css */
+.form-group label {
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--muted-on-dark);
+  letter-spacing: .3px;
+}
+
+/* Input styling matching contact form and registration */
+.form-group input {
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 12px;
+  background: rgba(12, 12, 14, .55);
+  color: #fff;
+  font-size: 15px;
+  outline: none;
+  transition: border-color .2s ease, background .2s ease, box-shadow .2s ease;
+  font-family: inherit;
+}
+
+.form-group input::placeholder {
+  color: #9aa3b5;
+}
+
+.form-group input:focus {
+  border-color: var(--accent);
+  background: rgba(243, 211, 124, .08);
+  box-shadow: 0 0 0 3px rgba(243, 211, 124, .25);
+}
+
+/* Password visibility wrapper */
+.password-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.password-wrapper input {
+  width: 100%;
+  box-sizing: border-box;
+  padding-right: 44px;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9aa3b5;
+  cursor: pointer;
+  font-size: 18px;
+  transition: color .2s ease;
+  user-select: none;
+}
+
+.toggle-password:hover {
+  color: var(--accent);
+}
+
+/* Remember me checkbox */
+.remember-me {
+  display: flex;
+  align-items: center;
+  margin: -8px 0 20px;
+}
+
+.remember-me input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0 8px 0 0;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.remember-me label {
+  font-size: 14px;
+  color: var(--muted-on-dark);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Forgot password link */
+.forgot-password {
+  display: block;
+  margin: -4px 0 24px;
+  text-align: right;
+  font-size: 14px;
+}
+
+.forgot-password a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px dashed rgba(243, 211, 124, .4);
+  transition: border-color .2s ease, color .2s ease;
+}
+
+.forgot-password a:hover {
+  color: #ffe4a1;
+  border-bottom-color: var(--accent);
+}
+
+/* Submit button - enhanced version of .book-btn */
+.login-card .book-btn {
+  width: 100%;
+  padding: 14px;
+  margin-top: 4px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent), #e6c670);
+  color: #1b120a;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+  box-shadow: 0 4px 12px rgba(243, 211, 124, .3);
+}
+
+.login-card .book-btn:hover {
+  background: linear-gradient(135deg, #ffe4a1, var(--accent));
+  box-shadow: 0 8px 24px rgba(243, 211, 124, .45);
+  transform: translateY(-2px);
+}
+
+.login-card .book-btn:active {
+  transform: translateY(0);
+}
+
+.login-card .book-btn:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Divider with text */
+.divider {
+  display: flex;
+  align-items: center;
+  margin: 24px 0;
+  color: var(--muted-on-dark);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, .12);
+}
+
+.divider::before {
+  margin-right: 12px;
+}
+
+.divider::after {
+  margin-left: 12px;
+}
+
+/* Social login buttons */
+.social-login {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .04);
+  color: var(--text-on-dark);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .2s ease, border-color .2s ease, transform .15s ease;
+  text-decoration: none;
+}
+
+.social-btn:hover {
+  background: rgba(255, 255, 255, .08);
+  border-color: rgba(255, 255, 255, .22);
+  transform: translateY(-1px);
+}
+
+.social-btn i {
+  font-size: 18px;
+}
+
+.social-btn.google {
+  border-color: #ea4335;
+}
+
+.social-btn.google:hover {
+  background: rgba(234, 67, 53, .12);
+  border-color: #ea4335;
+}
+
+.social-btn.facebook {
+  border-color: #1877f2;
+}
+
+.social-btn.facebook:hover {
+  background: rgba(24, 119, 242, .12);
+  border-color: #1877f2;
+}
+
+/* Sign up link */
+.signup-link {
+  text-align: center;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, .08);
+  font-size: 15px;
+  color: var(--muted-on-dark);
+}
+
+.signup-link a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+  border-bottom: 1px dashed rgba(243, 211, 124, .4);
+  transition: border-color .2s ease, color .2s ease;
+}
+
+.signup-link a:hover {
+  color: #ffe4a1;
+  border-bottom-color: var(--accent);
+}
+
+/* Error message styling */
+.error-message {
+  display: none;
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(207, 45, 45, .3);
+  border-radius: 10px;
+  background: rgba(207, 45, 45, .1);
+  color: #ff6b6b;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.error-message.show {
+  display: block;
+}
+
+.error-message i {
+  margin-right: 8px;
+}
+
+/* Success message styling */
+.success-message {
+  display: none;
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(76, 175, 80, .3);
+  border-radius: 10px;
+  background: rgba(76, 175, 80, .1);
+  color: #81c784;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.success-message.show {
+  display: block;
+}
+
+.success-message i {
+  margin-right: 8px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 580px) {
+  .login-container {
+    padding: 24px 16px;
+  }
+  
+  .login-card {
+    padding: 32px 24px 28px;
+  }
+  
+  .login-card h2 {
+    font-size: 28px;
+  }
+}
+
+/* Loading state for submit button */
+.login-card .book-btn.loading {
+  position: relative;
+  color: transparent;
+  pointer-events: none;
+}
+
+.login-card .book-btn.loading::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  top: 50%;
+  left: 50%;
+  margin-left: -8px;
+  margin-top: -8px;
+  border: 2px solid #1b120a;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spinner .6s linear infinite;
+}
+
+@keyframes spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
