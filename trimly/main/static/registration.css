@@ -1,100 +1,132 @@
 /* ==========================================================================
-   Registration page
-   - Layout and card
-   - Form inputs + validation helpers
-   - Password visibility controls
-   - Role selection cards
-   - Submit button reuse
-   ========================================================================== */
+   Registration page - Aligned with landing page design system
+========================================================================== */
 
-/* Page */
+/* Page background matches landing dark theme */
 body {
-  color: var(--text);
-  background: #faf9f7;
+  color: var(--text-on-dark);
+  background: linear-gradient(#0e121a, #101520);
+  min-height: 100vh;
 }
 
-/* Layout */
+/* Layout - centered with proper spacing */
 .registration-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 80vh;
+  min-height: calc(100vh - var(--navbar-h));
+  padding: 40px 20px;
 }
 
-/* Card */
+/* Card - glass morphism matching landing page style */
 .registration-card {
-  /* Box */
   width: 100%;
-  max-width: 400px;
-  padding: 32px 28px 24px;
-
-  /* Visual */
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  max-width: 460px;
+  padding: 36px 32px 28px;
+  
+  /* Glass effect matching services cards */
+  background: rgba(20, 20, 22, .36);
+  border: 1px solid rgba(255, 255, 255, .08);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 18px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 18px 40px rgba(0, 0, 0, .45);
+  
+  transition: box-shadow .3s ease, border-color .3s ease;
 }
 
-/* Form */
+.registration-card:hover {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 26px 60px rgba(0, 0, 0, .55);
+  border-color: rgba(255, 255, 255, .14);
+}
+
+/* Title styling */
+.registration-card h2 {
+  font-family: "Playfair Display", serif;
+  font-weight: 900;
+  font-size: clamp(28px, 4vw, 36px);
+  margin: 0 0 8px;
+  color: #f5f3ef;
+  text-align: center;
+}
+
+.registration-card p {
+  text-align: center;
+  color: var(--muted-on-dark);
+  margin: 0 0 24px;
+}
+
+/* Form groups */
 .form-group {
   display: flex;
   flex-direction: column;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
 .form-group label {
-  margin-bottom: 6px;
-  font-weight: 500;
-  color: var(--text);
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--muted-on-dark);
+  letter-spacing: .3px;
 }
 
-.form-group input {
-  /* Box */
-  padding: 10px;
-  border: 1px solid #e6e6e6;
-  border-radius: 6px;
-
-  /* Visual */
-  background: #faf9f7;
-  color: var(--text);
-
-  /* Text */
+/* Input styling matching contact form */
+.form-group input,
+.form-group textarea,
+.form-group select {
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 12px;
+  background: rgba(12, 12, 14, .55);
+  color: #fff;
   font-size: 15px;
-}
-
-.form-group input:focus {
   outline: none;
+  transition: border-color .2s ease, background .2s ease, box-shadow .2s ease;
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: #9aa3b5;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
   border-color: var(--accent);
-  background: #fffbe6;
+  background: rgba(243, 211, 124, .08);
+  box-shadow: 0 0 0 3px rgba(243, 211, 124, .25);
 }
 
-/* Validation helpers (inline style moved here) */
-input:invalid {
-  border-color: #dc3545;
-  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+/* Validation states */
+input:invalid:not(:placeholder-shown) {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px rgba(207, 45, 45, .25);
 }
 
-input:valid {
-  border-color: #28a745;
-  box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+input:valid:not(:placeholder-shown) {
+  border-color: #4caf50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, .2);
 }
 
-/* Password requirements list */
+/* Password requirements */
 .password-requirements {
-  margin-top: 8px;
-  padding: 12px;
-  border: 1px solid #e9ecef;
-  border-radius: 6px;
-
-  /* Visual */
-  background-color: #f8f9fa;
-
-  /* Text */
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 10px;
+  background: rgba(12, 12, 14, .4);
   font-size: 13px;
 }
 
 .password-requirements li {
-  margin: 4px 0;
-  color: #6c757d;
+  margin: 5px 0;
+  color: #bfc6d6;
+  line-height: 1.5;
+}
+
+.password-requirements li.valid {
+  color: #4caf50;
 }
 
 /* Password visibility wrapper */
@@ -106,82 +138,153 @@ input:valid {
 .password-wrapper input {
   width: 100%;
   box-sizing: border-box;
-
-  /* Make space for visibility icon */
-  padding-right: 40px;
+  padding-right: 44px;
 }
 
 .toggle-password {
   position: absolute;
-  right: 12px;
+  right: 14px;
   top: 50%;
   transform: translateY(-50%);
-  color: #6c757d;
+  color: #9aa3b5;
   cursor: pointer;
+  font-size: 18px;
+  transition: color .2s ease;
 }
 
 .toggle-password:hover {
-  color: #343a40;
+  color: var(--accent);
 }
 
-/* Role selection */
+/* Role selection - enhanced glass cards */
 .role-selection {
   display: flex;
   justify-content: center;
-  gap: 16px;
-  margin-top: 10px;
+  gap: 14px;
+  margin-top: 12px;
+  margin-bottom: 20px;
 }
 
 .role-box {
-  /* Layout */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-
-  /* Box */
-  width: 120px;
-  height: 120px;
-  border: 2px solid #e6e6e6;
-  border-radius: 10px;
-  padding: 8px;
-
-  /* Visual */
-  background: #fafafa;
-
-  /* Interaction */
+  flex: 1;
+  max-width: 140px;
+  height: 130px;
+  padding: 12px;
+  
+  /* Glass effect */
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 14px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  
   cursor: pointer;
-  transition: all 0.2s ease;
-
-  /* Text */
+  transition: all .25s ease;
   font-size: 14px;
+  color: var(--muted-on-dark);
 }
 
 .role-box i {
-  font-size: 28px;
-  margin-bottom: 8px;
-  color: var(--brand);
+  font-size: 32px;
+  margin-bottom: 10px;
+  color: var(--accent);
+  transition: transform .2s ease;
 }
 
 .role-box:hover {
-  background: #fffbe6;
-  border-color: var(--accent);
+  background: rgba(255, 255, 255, .08);
+  border-color: rgba(243, 211, 124, .4);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, .35);
 }
 
-/* Hide default radio input */
+.role-box:hover i {
+  transform: scale(1.1);
+}
+
+/* Hide radio input */
 .role-box input[type="radio"] {
   display: none;
 }
 
 /* Selected state */
 .role-box:has(input[type="radio"]:checked) {
-  background: var(--brand);
-  border-color: var(--brand);
-  color: #fff;
+  background: linear-gradient(135deg, var(--accent), #e6c670);
+  border-color: var(--accent);
+  color: #1b120a;
+  box-shadow: 0 8px 20px rgba(243, 211, 124, .4), inset 0 1px 0 rgba(255, 255, 255, .3);
+}
+
+.role-box:has(input[type="radio"]:checked) i {
+  color: #1b120a;
+  transform: scale(1.15);
 }
 
 .role-box input[type="radio"]:checked ~ p {
   font-weight: 700;
 }
 
-/* Submit button uses .book-btn from base.css */
+/* Submit button - enhanced version of .book-btn */
+.registration-card .book-btn {
+  width: 100%;
+  padding: 14px;
+  margin-top: 8px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent), #e6c670);
+  color: #1b120a;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+  box-shadow: 0 4px 12px rgba(243, 211, 124, .3);
+}
+
+.registration-card .book-btn:hover {
+  background: linear-gradient(135deg, #ffe4a1, var(--accent));
+  box-shadow: 0 8px 24px rgba(243, 211, 124, .45);
+  transform: translateY(-2px);
+}
+
+.registration-card .book-btn:active {
+  transform: translateY(0);
+}
+
+/* Link styling */
+.registration-card a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px dashed rgba(243, 211, 124, .4);
+  transition: border-color .2s ease, color .2s ease;
+}
+
+.registration-card a:hover {
+  color: #ffe4a1;
+  border-bottom-color: var(--accent);
+}
+
+/* Responsive adjustments */
+@media (max-width: 580px) {
+  .registration-container {
+    padding: 24px 16px;
+  }
+  
+  .registration-card {
+    padding: 28px 24px;
+  }
+  
+  .role-selection {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .role-box {
+    max-width: 100%;
+    height: auto;
+    padding: 16px;
+  }
+}
