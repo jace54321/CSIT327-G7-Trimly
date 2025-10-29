@@ -11,9 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
-
 import os
-from pathlib import Path
 from dotenv import load_dotenv
 from urllib.parse import urlparse
 
@@ -29,18 +27,17 @@ except Exception:
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DJANGO_DEBUG', default=True)
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", ".onrender.com"]
-CSRF_TRUSTED_ORIGINS = ["http://*.onrender.com"]
-
+CSRF_TRUSTED_ORIGINS = ["https://*.onrender.com"]  # Changed to https
 
 # Application definition
 
@@ -56,6 +53,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # ✅ Added WhiteNoise
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -83,21 +81,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'trimly.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-#DATABASES = {
-#    'default': {
-#        'ENGINE': 'django.db.backends.sqlite3',
-#        'NAME': BASE_DIR / 'db.sqlite3',
-#    }
-#}
-
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-# Database configuration is handled below (supports DB_URL/session pooler or individual vars)
 # Database configuration
 # Priority order:
 # 1. Use DB_URL (session pooler or standard connection string). Example:
@@ -107,7 +93,7 @@ WSGI_APPLICATION = 'trimly.wsgi.application'
 #      - DB_CONN_MAX_AGE (seconds, default 600) to keep DB connections open for reuse
 #      - DB_SSLMODE (e.g. require) or DB_SSL=true to enforce SSL for cloud providers
 # 2. Use individual DB_NAME/DB_USER/DB_PASSWORD/DB_HOST/DB_PORT variables (transaction style)
-# 3. Fallback to local SQLite for development'
+# 3. Fallback to local SQLite for development
 
 db_url = os.getenv('DB_URL') or os.getenv('DATABASE_URL')
 if db_url:
@@ -188,20 +174,20 @@ USE_I18N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
-
-import os
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # ✅ Added STATIC_ROOT
 
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'main', 'static')
 ]
 
+# ✅ WhiteNoise configuration for static file serving
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
