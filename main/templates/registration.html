@@ -78,7 +78,6 @@
             <form action="/register/" method="POST">
                 {% csrf_token %}
 
-                
                 <!-- Personal Information -->
                 <div class="form-group">
                     <label for="first_name">First Name *</label>
@@ -87,7 +86,7 @@
                            name="first_name" 
                            required 
                            maxlength="30"
-                           value="{{ request.POST.first_name }}"
+                           value="{{ prefill.first_name|default:'' }}"
                            placeholder="Enter your first name">
                 </div>
 
@@ -98,7 +97,7 @@
                            name="last_name" 
                            required 
                            maxlength="30"
-                           value="{{ request.POST.last_name }}"
+                           value="{{ prefill.last_name|default:'' }}"
                            placeholder="Enter your last name">
                 </div>
 
@@ -110,22 +109,32 @@
                            name="phone_number" 
                            required 
                            maxlength="11"
-                           value="{{ request.POST.phone_number }}"
+                           value="{{ prefill.phone_number|default:'' }}"
                            placeholder="09xxxxxxxxx (11 digits)">
                     <small style="color: #666; font-size: 13px; margin-top: 4px; display: block;">
                         Must start with 09 and contain exactly 11 digits
                     </small>
                 </div>
 
-                   <!-- Account Information -->
+                <!-- Account Information -->
                 <div class="form-group">
                     <label for="username">Username</label>
-                    <input type="text" id="username" name="username" required minlength="3">
+                    <input type="text" 
+                           id="username" 
+                           name="username" 
+                           required 
+                           minlength="3"
+                           value="{{ prefill.username|default:'' }}">
                 </div>
 
                 <div class="form-group">
                     <label for="email">Email</label>
-                    <input type="email" id="email" name="email" required title="Please enter a valid email address">
+                    <input type="email" 
+                           id="email" 
+                           name="email" 
+                           required 
+                           title="Please enter a valid email address"
+                           value="{{ prefill.email|default:'' }}">
                 </div>
 
                 <!-- Password field -->
@@ -139,7 +148,6 @@
                         <i class="fa-solid fa-eye toggle-password" id="togglePassword"></i>
                     </div>
 
-                    <!-- Static requirements list -->
                     <div class="password-requirements">
                         <strong>Password must contain:</strong>
                         <ul>
@@ -152,7 +160,7 @@
                     </div>
                 </div>
 
-                <!-- Confirm Password field -->
+                <!-- Confirm Password -->
                 <div class="form-group">
                     <label for="confirm-password">Confirm Password</label>
                     <div class="password-wrapper">
@@ -161,16 +169,19 @@
                     </div>
                 </div>
 
+                <!-- Role Selection -->
                 <div class="form-group">
                     <label><strong>Select Role</strong></label>
                     <div class="role-selection">
                         <label class="role-box">
-                            <input type="radio" name="role" value="customer" required>
+                            <input type="radio" name="role" value="customer" 
+                                   {% if prefill.role == 'customer' %}checked{% endif %}>
                             <i class="fa-solid fa-user"></i>
                             <p>Customer</p>
                         </label>
                         <label class="role-box">
-                            <input type="radio" name="role" value="barber">
+                            <input type="radio" name="role" value="barber"
+                                   {% if prefill.role == 'barber' %}checked{% endif %}>
                             <i class="fa-solid fa-scissors"></i>
                             <p>Barber</p>
                         </label>

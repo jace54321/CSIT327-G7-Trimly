@@ -94,12 +94,23 @@ def registration_view(request):
             except ValidationError as e:
                 errors.extend(e.messages)
 
+        # If there are errors → stay on register form with entered data
         if errors:
             for error in errors:
                 messages.error(request, error)
-            # FIXED: Use redirect with query parameter properly
-            return redirect('/auth/?mode=register')
 
+            context = {
+                "show_register": True,  # 👈 Important for staying on the Sign Up tab
+                "username": username,
+                "email": email,
+                "first_name": first_name,
+                "last_name": last_name,
+                "phone_number": phone_number,
+                "role": role,
+            }
+            return render(request, "auth.html", context)
+
+        # If everything is valid → create user
         try:
             user = User.objects.create_user(
                 username=username,
@@ -108,9 +119,9 @@ def registration_view(request):
                 first_name=first_name,
                 last_name=last_name
             )
-            
+
             clean_phone = validate_phone_number(phone_number)
-            
+
             if role == "barber":
                 Barber.objects.create(user=user, phone_number=clean_phone)
                 redirect_url = "barber_dashboard"
@@ -119,20 +130,29 @@ def registration_view(request):
                 redirect_url = "customer_dashboard"
             else:
                 redirect_url = "landing"
-            
-            # Automatically log the user in
+
+            # Automatically log in the user
             login(request, user)
-            
+
             messages.success(request, "Registration successful! Welcome!")
             return redirect(redirect_url)
-        
+
         except IntegrityError:
             messages.error(request, "Registration unsuccessful! Please try again.")
-            # FIXED: Use redirect with query parameter properly
-            return redirect('/auth/?mode=register')
-    
-    # FIXED: GET request - redirect to auth page with register mode
-    return redirect('/auth/?mode=register')
+            context = {
+                "show_register": True,  # 👈 stay on Sign Up even on error
+                "username": username,
+                "email": email,
+                "first_name": first_name,
+                "last_name": last_name,
+                "phone_number": phone_number,
+                "role": role,
+            }
+            return render(request, "auth.html", context)
+
+    # If GET request, show register form
+    return render(request, "auth.html", {"show_register": True})
+
 
 
 # -------------------------------
