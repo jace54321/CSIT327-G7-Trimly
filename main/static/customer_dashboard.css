@@ -1625,3 +1625,25 @@ body {
     gap: 6px;
   }
 }
+/* Cancel confirmation modal styling */
+#cancelModal .modal-content {
+  max-width: 500px;
+}
+
+#cancelModal .btn-danger {
+  width: 100%;
+  justify-content: center;
+}
+/* Hint text hover effect */
+.booking-card-body > div:last-child {
+    user-select: none;
+}
+
+.booking-card-body > div:last-child:hover {
+    color: var(--accent) !important;
+}
+
+.booking-card-body > div:last-child:hover i {
+    transform: translateY(2px);
+    transition: transform 0.2s;
+}

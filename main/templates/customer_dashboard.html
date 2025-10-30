@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
+
     {# ========================== Navbar ========================== #}
     <header class="navbar navbar-glass">
         <div class="navbar-left">
@@ -89,7 +90,7 @@
             </div>
         </div>
 
-        {# -------- 3-PANEL BOOKING FLOW (Hidden by default) -------- #}
+        {# -------- 3-PANEL BOOKING FLOW -------- #}
         <div class="booking-flow" id="bookingFlow" style="display: none;">
             <div class="booking-flow-header">
                 <h2><i class="fas fa-calendar-plus"></i> Book New Appointment</h2>
@@ -178,7 +179,7 @@
                                         <div class="service-card" onclick="selectService({{ service.id }}, '{{ service.name|escapejs }}', {{ service.price }}, {{ service.duration }})">
                                             <div class="service-card-header">
                                                 <h4>{{ service.name }}</h4>
-                                                <span class="service-price">${{ service.price }}</span>
+                                                <span class="service-price">₱{{ service.price|floatformat:0 }}</span>
                                             </div>
                                             <p class="service-description">{{ service.description|default:"Premium grooming service" }}</p>
                                             <div class="service-meta">
@@ -267,100 +268,70 @@
             </form>
         </div>
 
-        {# -------- BOOKINGS LIST (Shown by default) -------- #}
+        {# -------- BOOKINGS LIST -------- #}
         <div class="bookings-container" id="bookingsContainer">
             
-{# UPCOMING APPOINTMENTS #}
-<div class="bookings-section">
-    <div class="section-header">
-        <h2>
-            <i class="fas fa-calendar-alt"></i>
-            Upcoming Appointments
-        </h2>
-        <span class="count-badge">{{ upcoming_bookings|length }}</span>
-    </div>
-
-    {% if upcoming_bookings %}
-        <div class="bookings-grid">
-            {% for booking in upcoming_bookings %}
-                <div class="booking-card">
-                    <div class="booking-card-header">
-                        <div class="service-info">
-                            <h3 class="service-name">{{ booking.service_type.name }}</h3>
-                            <span class="booking-status status-{{ booking.status }}">
-                                {{ booking.get_status_display }}
-                            </span>
-                        </div>
-                        <div class="booking-price">${{ booking.price }}</div>
-                    </div>
-
-                    <div class="booking-card-body">
-                        <div class="booking-info-item">
-                            <i class="fas fa-user-tie"></i>
-                            <span>{{ booking.barber.get_full_name }}</span>
-                        </div>
-                        <div class="booking-info-item">
-                            <i class="fas fa-calendar"></i>
-                            <span>{{ booking.appointment_datetime|date:"F d, Y" }}</span>
-                        </div>
-                        <div class="booking-info-item">
-                            <i class="fas fa-clock"></i>
-                            <span>{{ booking.appointment_datetime|date:"g:i A" }} ({{ booking.duration }} min)</span>
-                        </div>
-                    </div>
-
-                    <div class="booking-card-actions">
-                        {# Always show View button #}
-                        <button type="button" class="btn-action" 
-                                onclick="viewBookingDetails(
-                                    {{ booking.id }}, 
-                                    '{{ booking.service_type.name|escapejs }}', 
-                                    '{{ booking.barber.get_full_name|escapejs }}', 
-                                    '{{ booking.appointment_datetime|date:"F d, Y" }}', 
-                                    '{{ booking.appointment_datetime|date:"g:i A" }}', 
-                                    {{ booking.duration }}, 
-                                    {{ booking.price }}, 
-                                    '{{ booking.status }}', 
-                                    '{{ booking.get_status_display|escapejs }}', 
-                                    '{{ booking.service_description|default:""|escapejs }}', 
-                                    true
-                                )">
-                            <i class="fas fa-eye"></i> View
-                        </button>
-                        
-                      {# Reschedule button #}
-                      <form method="POST" action="{% url 'reschedule_booking' booking.id %}" style="display: inline;">
-                          {% csrf_token %}
-                          <input type="hidden" name="new_date" id="rescheduleNewDate">
-                          <input type="hidden" name="new_time" id="rescheduleNewTime">
-                          <button type="submit" class="btn-action btn-reschedule" onclick="return promptRescheduleDate(this.form, {{ booking.id }})">
-                              <i class="fas fa-calendar-alt"></i> Reschedule
-                          </button>
-                      </form>
-
-                      {# Cancel button #}
-                      <form method="POST" action="{% url 'cancel_booking' booking.id %}" style="display: inline;" 
-                            onsubmit="return confirm('Are you sure you want to cancel this booking?');">
-                          {% csrf_token %}
-                          <button type="submit" class="btn-action btn-cancel">
-                              <i class="fas fa-times"></i> Cancel
-                          </button>
-                      </form>
-                    </div>
+            {# UPCOMING APPOINTMENTS #}
+            <div class="bookings-section">
+                <div class="section-header">
+                    <h2>
+                        <i class="fas fa-calendar-alt"></i>
+                        Upcoming Appointments
+                    </h2>
+                    <span class="count-badge">{{ upcoming_bookings|length }}</span>
                 </div>
-            {% endfor %}
-        </div>
-    {% else %}
-        <div class="empty-state">
-            <div class="empty-icon">
-                <i class="fas fa-calendar-times"></i>
-            </div>
-            <h3>No Upcoming Appointments</h3>
-            <p>Book a service to get started</p>
-        </div>
-    {% endif %}
-</div>
 
+                {% if upcoming_bookings %}
+                    <div class="bookings-grid">
+                        {% for booking in upcoming_bookings %}
+                            <div class="booking-card">
+                                <div class="booking-card-header">
+                                    <div class="service-info">
+                                        <h3 class="service-name">{{ booking.service_type.name }}</h3>
+                                        <span class="booking-status status-{{ booking.status }}">
+                                            {{ booking.get_status_display }}
+                                        </span>
+                                    </div>
+                                    <div class="booking-price">₱{{ booking.price|floatformat:0 }}</div>
+
+                                </div>
+
+                                <div class="booking-card-body">
+                                    <div class="booking-info-item">
+                                        <i class="fas fa-user-tie"></i>
+                                        <span>{{ booking.barber.get_full_name }}</span>
+                                    </div>
+                                    <div class="booking-info-item">
+                                        <i class="fas fa-calendar"></i>
+                                        <span>{{ booking.appointment_datetime|date:"F d, Y" }}</span>
+                                    </div>
+                                    <div class="booking-info-item">
+                                        <i class="fas fa-clock"></i>
+                                        <span>{{ booking.appointment_datetime|date:"g:i A" }} ({{ booking.duration }} min)</span>
+                                    </div>
+                                    
+                                    {# Hint text #}
+                                    <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.08); color: #9aa3b5; font-size: 13px; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.2s;" 
+                                        onclick="viewBookingDetails({{ booking.id }}, '{{ booking.service_type.name|escapejs }}', '{{ booking.barber.get_full_name|escapejs }}', '{{ booking.appointment_datetime|date:'F d, Y' }}', '{{ booking.appointment_datetime|date:'g:i A' }}', {{ booking.duration }}, {{ booking.price }}, '{{ booking.status }}', '{{ booking.get_status_display|escapejs }}', '{{ booking.service_description|default:''|escapejs }}', true)"
+                                        onmouseover="this.style.color='var(--accent)'"
+                                        onmouseout="this.style.color='#9aa3b5'">
+                                        <i class="fas fa-eye" style="font-size: 13px;"></i>
+                                        Click to manage booking
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-calendar-times"></i>
+                        </div>
+                        <h3>No Upcoming Appointments</h3>
+                        <p>Book a service to get started</p>
+                    </div>
+                {% endif %}
+            </div>
 
             {# PAST APPOINTMENTS - COLLAPSIBLE #}
             <div class="bookings-section collapsible-section">
@@ -468,9 +439,7 @@
             
             <div class="modal-footer">
                 <button type="button" class="btn-secondary" onclick="closeViewDetails()">Close</button>
-                <div id="detailActions" style="display: flex; gap: 12px; margin-left: auto;">
-                    <!-- Action buttons inserted by JavaScript -->
-                </div>
+                <div id="detailActions" style="display: flex; gap: 12px; margin-left: auto;"></div>
             </div>
         </div>
     </div>
@@ -559,8 +528,44 @@
         </div>
     </div>
 
+    {# ==================== CANCEL CONFIRMATION MODAL ==================== #}
+    <div class="modal-overlay" id="cancelModal" style="display: none;" onclick="closeCancelModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3><i class="fas fa-exclamation-circle"></i> Cancel Booking</h3>
+                <button type="button" class="close-modal-btn" onclick="closeCancelModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <p style="font-size: 16px; color: #f4f2ee; margin-bottom: 20px;">
+                    Are you sure you want to cancel this booking?
+                </p>
+                <div style="background: rgba(239, 68, 68, 0.1); border-left: 4px solid #ef4444; padding: 16px; border-radius: 8px;">
+                    <p style="margin: 0; color: #f87171; font-size: 14px;">
+                        <strong>Service:</strong> <span id="cancelServiceName">-</span>
+                    </p>
+                    <p style="margin: 8px 0 0 0; color: #f87171; font-size: 14px;">
+                        <strong>Date & Time:</strong> <span id="cancelDateTime">-</span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="display: flex; gap: 12px; justify-content: space-between;">
+                <button type="button" class="btn-secondary" onclick="closeCancelModal()" style="flex: 1; padding: 12px 20px; font-weight: 500;">
+                    Keep Booking
+                </button>
+                <button type="button" class="btn-danger" onclick="confirmCancel()" id="confirmCancelBtn" style="flex: 1; padding: 12px 20px; font-weight: 500;">
+                    <i class="fas fa-check"></i> Yes, Cancel Booking
+                </button>
+            </div>
+        </div>
+    </div>
+
     {# ===================== JavaScript ===================== #}
     <script>
+
         // ==================== BOOKING FLOW STATE ====================
         let bookingData = {
             date: null,
@@ -698,7 +703,11 @@
         }
 
         function selectDate(date) {
-            bookingData.date = date.toISOString().split('T')[0];
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            
+            bookingData.date = `${year}-${month}-${day}`;
             document.getElementById('final-date').value = bookingData.date;
             renderCalendar();
             generateTimeSlots(date);
@@ -789,10 +798,10 @@
             document.getElementById('summaryService').textContent = bookingData.serviceName;
             document.getElementById('summaryServiceMeta').textContent = `${bookingData.serviceDuration} minutes`;
             document.getElementById('summaryBarber').textContent = bookingData.barberName;
-            document.getElementById('summaryPrice').textContent = `$${bookingData.servicePrice}`;
+            document.getElementById('summaryPrice').textContent = `₱${bookingData.servicePrice}`;
         }
 
-        // ==================== VIEW DETAILS FUNCTIONALITY (FIXED) ====================
+        // ==================== VIEW DETAILS FUNCTIONALITY ====================
         let currentViewBooking = {
             id: null,
             service: null,
@@ -803,8 +812,6 @@
         };
 
         function viewBookingDetails(id, service, barber, date, time, duration, price, status, statusDisplay, notes, canBeCancelled) {
-            console.log('View Details Called - Can Cancel:', canBeCancelled);
-            
             currentViewBooking = {
                 id: id,
                 service: service,
@@ -820,7 +827,7 @@
             document.getElementById('detailDate').textContent = date;
             document.getElementById('detailTime').textContent = time;
             document.getElementById('detailDuration').textContent = duration + ' minutes';
-            document.getElementById('detailPrice').textContent = '$' + price;
+            document.getElementById('detailPrice').textContent = '₱' + price;
             
             const statusSpan = document.getElementById('detailStatus');
             statusSpan.innerHTML = `<span class="booking-status status-${status}">${statusDisplay}</span>`;
@@ -836,11 +843,7 @@
             const actionsContainer = document.getElementById('detailActions');
             actionsContainer.innerHTML = '';
             
-            console.log('Creating buttons - canBeCancelled:', canBeCancelled);
-            
             if (canBeCancelled === true || canBeCancelled === 'true' || canBeCancelled === 'True') {
-                console.log('Adding action buttons');
-                
                 const rescheduleBtn = document.createElement('button');
                 rescheduleBtn.type = 'button';
                 rescheduleBtn.className = 'btn-primary';
@@ -856,27 +859,10 @@
                 cancelBtn.className = 'btn-danger';
                 cancelBtn.innerHTML = '<i class="fas fa-times"></i> Cancel Booking';
                 cancelBtn.onclick = function() {
-                    if (confirm('Are you sure you want to cancel this booking?')) {
-                        const form = document.createElement('form');
-                        form.method = 'POST';
-                        form.action = `/dashboard/customer/booking/${id}/cancel/`;
-                        
-                        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-                        if (csrfToken) {
-                            const csrfInput = document.createElement('input');
-                            csrfInput.type = 'hidden';
-                            csrfInput.name = 'csrfmiddlewaretoken';
-                            csrfInput.value = csrfToken.value;
-                            form.appendChild(csrfInput);
-                        }
-                        
-                        document.body.appendChild(form);
-                        form.submit();
-                    }
+                    closeViewDetails();
+                    openCancelModal(id, service, date, time);
                 };
                 actionsContainer.appendChild(cancelBtn);
-            } else {
-                console.log('No action buttons - booking cannot be cancelled');
             }
             
             document.getElementById('viewDetailsModal').style.display = 'flex';
@@ -984,7 +970,11 @@
         }
 
         function selectRescheduleDate(date) {
-            rescheduleData.date = date.toISOString().split('T')[0];
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            
+            rescheduleData.date = `${year}-${month}-${day}`;
             document.getElementById('rescheduleNewDate').value = rescheduleData.date;
             renderRescheduleCalendar();
             generateRescheduleTimeSlots(date);
@@ -1038,25 +1028,94 @@
         }
 
         function submitReschedule() {
+            const newDate = document.getElementById('rescheduleNewDate').value;
+            const newTime = document.getElementById('rescheduleNewTime').value;
+            
+            if (!newDate || !newTime) {
+                alert('Please select both date and time.');
+                return false;
+            }
+            
+            const [hours, minutes] = newTime.split(':');
+            const hour = parseInt(hours);
+            
+            if (hour < 9 || hour >= 18) {
+                alert('Please select a time between 9:00 AM and 6:00 PM.');
+                return false;
+            }
+            
+            const selectedDateTime = new Date(`${newDate}T${newTime}`);
+            const now = new Date();
+            const hoursUntil = (selectedDateTime - now) / (1000 * 60 * 60);
+            
+            if (hoursUntil < 24) {
+                alert('Please reschedule at least 24 hours in advance.');
+                return false;
+            }
+            
             const form = document.getElementById('rescheduleForm');
-            form.action = `/dashboard/customer/booking/${rescheduleData.bookingId}/reschedule/`;
+            form.action = `/bookings/${rescheduleData.bookingId}/reschedule/`;
             form.submit();
         }
 
-        function promptRescheduleDate(form, bookingId) {
-            const newDate = prompt('Enter new date (YYYY-MM-DD):');
-            if (!newDate) return false;
+        // ==================== CANCEL CONFIRMATION MODAL ====================
+        let cancelData = {
+            bookingId: null,
+            serviceName: null,
+            dateTime: null,
+            formAction: null
+        };
+
+        function openCancelModal(bookingId, serviceName, date, time) {
+            cancelData.bookingId = bookingId;
+            cancelData.serviceName = serviceName;
+            cancelData.dateTime = `${date} at ${time}`;
+            cancelData.formAction = `/bookings/${bookingId}/cancel/`;
             
-            const newTime = prompt('Enter new time (HH:MM):');
-            if (!newTime) return false;
+            document.getElementById('cancelServiceName').textContent = serviceName;
+            document.getElementById('cancelDateTime').textContent = cancelData.dateTime;
             
-            // Set hidden input values
-            form.querySelector('[name="new_date"]').value = newDate;
-            form.querySelector('[name="new_time"]').value = newTime;
-            
-            return true; // Submit the form
+            document.getElementById('cancelModal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
         }
 
+        function closeCancelModal(event) {
+            if (!event || event.target.classList.contains('modal-overlay') || event.target.classList.contains('close-modal-btn')) {
+                document.getElementById('cancelModal').style.display = 'none';
+                document.body.style.overflow = 'auto';
+                
+                cancelData = {
+                    bookingId: null,
+                    serviceName: null,
+                    dateTime: null,
+                    formAction: null
+                };
+            }
+        }
+
+        function confirmCancel() {
+            const btn = document.getElementById('confirmCancelBtn');
+            const originalText = btn.innerHTML;
+            
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cancelling...';
+            btn.disabled = true;
+            
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = cancelData.formAction;
+            
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (csrfToken) {
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = csrfToken.value;
+                form.appendChild(csrfInput);
+            }
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
 
         // ==================== PAST BOOKINGS COLLAPSE ====================
         function togglePastBookings() {
@@ -1079,6 +1138,8 @@
         document.addEventListener('DOMContentLoaded', function() {
             renderCalendar();
         });
+
     </script>
+
 </body>
 </html>
