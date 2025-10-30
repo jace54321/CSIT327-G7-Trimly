@@ -1,333 +1,1084 @@
 {% load static %}
-<!--
-  Customer Dashboard Template (Trimly)
-  Purpose:
-  - Show authenticated customers their upcoming and past bookings
-  - Provide actions: view booking details, reschedule, cancel
-  - Provide a form to create a new booking
-  Context variables expected from the view:
-  - user: Django auth user (automatically in context when enabled)
-  - messages: Django messages framework iterable
-  - upcoming_bookings: QuerySet of Reservation objects (future-oriented, filtered)
-  - past_bookings: QuerySet of Reservation objects (past-oriented, limited)
-  - services: QuerySet of ServiceType (active)
-  - barbers: QuerySet of Barber (active and available)
-  - today: date object for min constraints in date inputs
-  - selected_booking: Reservation or None (detail view)
-  - reschedule_booking: Reservation or None (reschedule form)
-  - show_booking_form: bool (whether to show new booking form)
--->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    {# Standard meta & title #}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customer Dashboard - Trimly</title>
-
-    {# Static CSS bundles; ensure STATIC_URL and files exist #}
+    <title>Dashboard - TRIMLY</title>
     <link rel="stylesheet" href="{% static 'base.css' %}">
     <link rel="stylesheet" href="{% static 'customer_dashboard.css' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
+    {# ========================== Navbar ========================== #}
+    <header class="navbar navbar-glass">
+        <div class="navbar-left">
+            <a href="{% url 'landing' %}" class="logo-link">
+                <div class="brand-mark">✂</div>
+                <h1 class="logo">TRIMLY</h1>
+            </a>
+        </div>
 
-{# ========================== Navbar ========================== #}
-<header class="navbar">
-  <div class="navbar-left">
-      {# Brand / home link #}
-      <a href="{% url 'landing' %}" class="logo-link">
-        <h1 class="logo">Trimly</h1>
-      </a>
-  </div>
-
-  <div class="navbar-right">
-    <ul>
-      {# Optional navigation placeholder #}
-      <li><a class="nav-link" href="/">Home</a></li>
-    </ul>
-
-    {# Auth-aware greeting and quick links #}
-    {% if user.is_authenticated %}
-      {# Route by profile type using related_name from OneToOne (barber_profile/customer_profile) #}
-      <a
-        href="{% if user.barber_profile %}{% url 'barber_dashboard' %}{% elif user.customer_profile %}{% url 'customer_dashboard' %}{% else %}{% url 'landing' %}{% endif %}"
-        class="btn btn-light"
-      >
-        {# Friendly display name with fallback to username #}
-        Welcome, {% if user.first_name or user.last_name %}{{ user.first_name }} {{ user.last_name }}{% else %}{{ user.username }}{% endif %}
-      </a>
-
-      {# CSRF-protected POST logout button to follow good practices #}
-      <form method="post" action="{% url 'logout' %}" style="display:inline;">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-primary">Logout</button>
-      </form>
-    {% else %}
-      {# For guests: registration/login calls-to-action #}
-      <a href="{% url 'register' %}" class="btn btn-light">Get Started</a>
-      <a href="{% url 'login' %}" class="btn btn-primary">Sign In</a>
-    {% endif %}
-  </div>
-</header>
-
-{# ====================== Flash Messages ====================== #}
-{% if messages %}
-  <div class="messages-container">
-    {% for message in messages %}
-      <div class="alert alert-{{ message.tags }}">
-        {{ message }}
-        {# Provide a way to clear view state (e.g., selected booking) by reloading dashboard #}
-        <a href="{% url 'customer_dashboard' %}" class="close-alert">&times;</a>
-      </div>
-    {% endfor %}
-  </div>
-{% endif %}
-
-{# ===================== Main Dashboard UI ===================== #}
-<div class="dashboard-wrapper">
-
-  {# --------------- Left Column: Bookings list --------------- #}
-  <div class="bookings-section">
-    <h2>My Bookings</h2>
-
-    {# -------- Upcoming Appointments -------- #}
-    <div class="bookings-category">
-      <h3>Upcoming Appointments</h3>
-
-      {# When there are upcoming bookings, render cards with actions #}
-      {% if upcoming_bookings %}
-        <div class="bookings-list">
-          {% for booking in upcoming_bookings %}
-            {# Highlight selected booking (compare IDs) #}
-            <div class="booking-card {% if selected_booking and selected_booking.id == booking.id %}selected{% endif %}">
-              <div class="booking-header">
-                <span class="service-name">{{ booking.service_type.name }}</span>
-                <span class="booking-status status-{{ booking.status }}">{{ booking.get_status_display }}</span>
-              </div>
-
-              <div class="booking-details">
-                {# get_full_name is a no-arg method exposed as attribute by the template engine #}
-                <p><strong>Barber:</strong> {{ booking.barber.get_full_name }}</p>
-                <p><strong>Date:</strong> {{ booking.appointment_datetime|date:"F d, Y" }}</p>
-                <p><strong>Time:</strong> {{ booking.appointment_datetime|date:"g:i A" }}</p>
-                <p><strong>Duration:</strong> {{ booking.duration }} min</p>
-                <p><strong>Price:</strong> ${{ booking.price }}</p>
-              </div>
-
-              <div class="booking-actions">
-                {# View details toggles right panel to detail view via query param #}
-                <a href="{% url 'customer_dashboard' %}?view={{ booking.id }}" class="btn-primary">View Details</a>
-
-                {# can_be_cancelled is a no-arg boolean method; safe to access as attribute #}
-                {% if booking.can_be_cancelled %}
-                  {# Reschedule opens right panel with reschedule form #}
-                  <a href="{% url 'customer_dashboard' %}?reschedule={{ booking.id }}" class="btn-secondary">Reschedule</a>
-                  
-                  {# Cancel submits a POST to cancel endpoint (confirm via JS) #}
-                  <form id="cancelForm-{{ booking.id }}" 
-                        method="POST" 
-                        action="{% url 'cancel_booking' booking.id %}" 
-                        style="display: inline;" 
-                        onsubmit="return confirm('Are you sure you want to cancel this booking?');">
+        <div class="navbar-right">
+            {% if user.is_authenticated %}
+                <span class="user-greeting">
+                    <i class="fas fa-user-circle"></i>
+                    {% if user.first_name %}{{ user.first_name }}{% else %}{{ user.username }}{% endif %}
+                </span>
+                <form method="post" action="{% url 'logout' %}" style="display:inline;">
                     {% csrf_token %}
-                  </form>
-                  <button type="submit" class="btn btn-cancel" form="cancelForm-{{ booking.id }}">
-                    Cancel
-                  </button>
-                {% else %}
-                  <span class="btn-disabled">Cannot Cancel</span>
-                {% endif %}
-              </div>
-            </div>
-          {% endfor %}
+                    <button type="submit" class="btn btn-light">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </form>
+            {% endif %}
         </div>
-      {% else %}
-        {# UX hint when there are no upcoming bookings #}
-        <p class="no-bookings">No upcoming appointments. Book a service to get started!</p>
-      {% endif %}
-    </div>
+    </header>
 
-    {# -------- Past Appointments -------- #}
-    <div class="bookings-category">
-      <h3>Past Appointments</h3>
-
-      {% if past_bookings %}
-        <div class="bookings-list">
-          {% for booking in past_bookings %}
-            <div class="booking-card past-booking {% if selected_booking and selected_booking.id == booking.id %}selected{% endif %}">
-              <div class="booking-header">
-                <span class="service-name">{{ booking.service_type.name }}</span>
-                <span class="booking-status status-{{ booking.status }}">{{ booking.get_status_display }}</span>
-              </div>
-
-              <div class="booking-details">
-                <p><strong>Barber:</strong> {{ booking.barber.get_full_name }}</p>
-                <p><strong>Date:</strong> {{ booking.appointment_datetime|date:"F d, Y" }}</p>
-                <p><strong>Time:</strong> {{ booking.appointment_datetime|date:"g:i A" }}</p>
-                <p><strong>Price:</strong> ${{ booking.price }}</p>
-              </div>
-
-              <div class="booking-actions">
-                {# Past bookings are view-only #}
-                <a href="{% url 'customer_dashboard' %}?view={{ booking.id }}" class="btn-view-small">View Details</a>
-              </div>
-            </div>
-          {% endfor %}
-        </div>
-      {% else %}
-        <p class="no-bookings">No past appointments yet.</p>
-      {% endif %}
-    </div>
-  </div>
-
-  {# --------------- Right Column: Panel --------------- #}
-  <div class="detail-panel">
-
-    {# ---------- New Booking Form (when ?action=book) ---------- #}
-    {% if show_booking_form %}
-      <h3>Book New Appointment</h3>
-
-      {# POST to create_booking view; CSRF protected #}
-      <form method="POST" action="{% url 'create_booking' %}" class="booking-form">
-        {% csrf_token %}
-
-        {# Service selector (pre-populated from active services) #}
-        <div class="form-group">
-          <label for="service">Select Service:</label>
-          <select id="service" name="service_id" required>
-            <option value="">-- Choose a Service --</option>
-            {% for service in services %}
-              {# duration/price data attributes for potential client-side enhancements #}
-              <option value="{{ service.id }}" data-duration="{{ service.duration }}" data-price="{{ service.price }}">
-                {{ service.name }} - ${{ service.price }} ({{ service.duration }} min)
-              </option>
+    {# ====================== Flash Messages ====================== #}
+    {% if messages %}
+        <div class="messages-container">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    <i class="fas fa-{% if message.tags == 'error' %}exclamation-circle{% else %}check-circle{% endif %}"></i>
+                    <span>{{ message }}</span>
+                    <a href="{% url 'customer_dashboard' %}" class="close-alert">&times;</a>
+                </div>
             {% endfor %}
-          </select>
         </div>
-
-        {# Barber selector (from available & active barbers) #}
-        <div class="form-group">
-          <label for="barber">Select Barber:</label>
-          <select id="barber" name="barber_id" required>
-            <option value="">-- Choose a Barber --</option>
-            {% for barber in barbers %}
-              <option value="{{ barber.id }}">
-                {{ barber.get_full_name }}{% if barber.specialty %} - {{ barber.specialty }}{% endif %}
-              </option>
-            {% endfor %}
-          </select>
-        </div>
-
-        {# Appointment date; min prevents past dates #}
-        <div class="form-group">
-          <label for="booking-date">Appointment Date:</label>
-          <input type="date" id="booking-date" name="appointment_date" min="{{ today|date:'Y-m-d' }}" required>
-        </div>
-
-        {# Appointment time input; hours validated server-side too #}
-        <div class="form-group">
-          <label for="booking-time">Appointment Time:</label>
-          <input type="time" id="booking-time" name="appointment_time" required>
-          <small>Business hours: 9:00 AM - 6:00 PM</small>
-        </div>
-
-        {# Optional notes passed to reservation.service_description #}
-        <div class="form-group">
-          <label for="notes">Special Requests (optional):</label>
-          <textarea id="notes" name="notes" rows="3" placeholder="Any special instructions or preferences..."></textarea>
-        </div>
-
-        {# Primary/secondary actions #}
-        <div class="form-actions">
-          <button type="submit" class="btn-primary">Confirm Booking</button>
-          <a href="{% url 'customer_dashboard' %}" class="btn-secondary">Cancel</a>
-        </div>
-      </form>
-
-    {# ---------- Reschedule Form (when ?reschedule=<id>) ---------- #}
-    {% elif reschedule_booking %}
-      <h3>Reschedule Appointment</h3>
-
-      {# POST to reschedule endpoint for the specific booking #}
-      <form method="POST" action="{% url 'reschedule_booking' reschedule_booking.id %}" class="reschedule-form">
-        {% csrf_token %}
-
-        {# Echo current reservation info for context #}
-        <div class="current-booking-info">
-          <h4>Current Booking:</h4>
-          <p><strong>Service:</strong> {{ reschedule_booking.service_type.name }}</p>
-          <p><strong>Barber:</strong> {{ reschedule_booking.barber.get_full_name }}</p>
-          <p><strong>Current Date:</strong> {{ reschedule_booking.appointment_datetime|date:"F d, Y" }}</p>
-          <p><strong>Current Time:</strong> {{ reschedule_booking.appointment_datetime|date:"g:i A" }}</p>
-        </div>
-
-        {# New date/time inputs with defaults pulled from existing appointment #}
-        <div class="form-group">
-          <label for="new-date">New Date:</label>
-          <input type="date" id="new-date" name="new_date" value="{{ reschedule_booking.appointment_datetime|date:'Y-m-d' }}" min="{{ today|date:'Y-m-d' }}" required>
-        </div>
-
-        <div class="form-group">
-          <label for="new-time">New Time:</label>
-          <input type="time" id="new-time" name="new_time" value="{{ reschedule_booking.appointment_datetime|date:'H:i' }}" required>
-          <small>Business hours: 9:00 AM - 6:00 PM</small>
-        </div>
-
-        <div class="form-actions">
-          <button type="submit" class="btn-primary">Confirm Reschedule</button>
-          <a href="{% url 'customer_dashboard' %}" class="btn-secondary">Cancel</a>
-        </div>
-      </form>
-
-    {# ---------- Booking Detail (when ?view=<id>) ---------- #}
-    {% elif selected_booking %}
-      <h3>Booking Details</h3>
-
-      {# Read-only details for the currently selected booking #}
-      <div class="detail-info">
-        <p><strong>Booking ID:</strong> #{{ selected_booking.id }}</p>
-        <p><strong>Service:</strong> {{ selected_booking.service_type.name }}</p>
-        <p><strong>Description:</strong> {{ selected_booking.service_type.description|default:"N/A" }}</p>
-        <p><strong>Barber:</strong> {{ selected_booking.barber.get_full_name }}</p>
-        <p><strong>Date:</strong> {{ selected_booking.appointment_datetime|date:"F d, Y" }}</p>
-        <p><strong>Time:</strong> {{ selected_booking.appointment_datetime|date:"g:i A" }}</p>
-        <p><strong>Duration:</strong> {{ selected_booking.duration }} minutes</p>
-        <p><strong>Price:</strong> ${{ selected_booking.price }}</p>
-        <p><strong>Status:</strong> <span class="status-badge status-{{ selected_booking.status }}">{{ selected_booking.get_status_display }}</span></p>
-        {% if selected_booking.service_description %}
-          <p><strong>Notes:</strong> {{ selected_booking.service_description }}</p>
-        {% endif %}
-        <p><strong>Booked on:</strong> {{ selected_booking.created_at|date:"F d, Y" }}</p>
-      </div>
-
-      <div class="detail-actions">
-        {# Close returns to default panel view #}
-        <a href="{% url 'customer_dashboard' %}" class="btn-secondary">Close</a>
-
-        {# Show reschedule/cancel only if allowed (24h rule handled in model/view) #}
-        {% if selected_booking.can_be_cancelled %}
-          <a href="{% url 'customer_dashboard' %}?reschedule={{ selected_booking.id }}" class="btn-primary">Reschedule</a>
-
-          <form method="POST" action="{% url 'cancel_booking' selected_booking.id %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to cancel this booking?');">
-            {% csrf_token %}
-            <button type="submit" class="btn-danger">Cancel Booking</button>
-          </form>
-        {% endif %}
-      </div>
-
-    {# ---------- Placeholder (default right panel) ---------- #}
-    {% else %}
-      <h3>Booking Details</h3>
-      <p class="placeholder-text">Select a booking to view details or click "Book New Appointment" to create one.</p>
-
-      {# Quick entry to booking form via query param #}
-      <div class="quick-action-content">
-        <a href="{% url 'customer_dashboard' %}?action=book" class="btn-book-new">
-          + Book New Appointment
-        </a>
-      </div>
     {% endif %}
-  </div>
+
+    {# ===================== Main Dashboard UI ===================== #}
+    <div class="dashboard-container">
+        
+        {# -------- HEADER SECTION with Quick Stats -------- #}
+        <div class="dashboard-header">
+            <div class="welcome-section">
+                <h1>Welcome Back, <span class="highlight">{{ user.first_name|default:user.username }}</span></h1>
+                <p class="subtitle">Manage your appointments and book new services</p>
+            </div>
+            
+            <div class="quick-stats">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-value">{{ upcoming_bookings|length }}</div>
+                        <div class="stat-label">Upcoming</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-value">{{ past_bookings|length }}</div>
+                        <div class="stat-label">Completed</div>
+                    </div>
+                </div>
+                
+                <button type="button" class="book-new-btn" onclick="openBookingFlow()">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Book Appointment</span>
+                </button>
+            </div>
+        </div>
+
+        {# -------- 3-PANEL BOOKING FLOW (Hidden by default) -------- #}
+        <div class="booking-flow" id="bookingFlow" style="display: none;">
+            <div class="booking-flow-header">
+                <h2><i class="fas fa-calendar-plus"></i> Book New Appointment</h2>
+                <button type="button" class="close-flow-btn" onclick="closeBookingFlow()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="booking-progress">
+                <div class="progress-step active" data-step="1">
+                    <div class="progress-circle">1</div>
+                    <span>Date & Time</span>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-step="2">
+                    <div class="progress-circle">2</div>
+                    <span>Service & Barber</span>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-step="3">
+                    <div class="progress-circle">3</div>
+                    <span>Confirm</span>
+                </div>
+            </div>
+
+            <form method="POST" action="{% url 'create_booking' %}" id="bookingFlowForm">
+                {% csrf_token %}
+                <input type="hidden" id="final-date" name="appointment_date">
+                <input type="hidden" id="final-time" name="appointment_time">
+                <input type="hidden" id="final-service" name="service_id">
+                <input type="hidden" id="final-barber" name="barber_id">
+
+                <div class="booking-panels">
+                    
+                    {# ========== PANEL 1: Calendar & Time Slots ========== #}
+                    <div class="booking-panel active" id="panel1">
+                        <div class="panel-content-grid">
+                            <div class="panel-section">
+                                <h3><i class="fas fa-calendar"></i> Select Date</h3>
+                                <div class="calendar-container-compact">
+                                    <div class="calendar-header">
+                                        <button type="button" class="calendar-nav" onclick="previousMonth()">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </button>
+                                        <div class="calendar-month" id="calendarMonth">January 2024</div>
+                                        <button type="button" class="calendar-nav" onclick="nextMonth()">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                    </div>
+                                    <div class="calendar-weekdays">
+                                        <div class="weekday">Su</div>
+                                        <div class="weekday">Mo</div>
+                                        <div class="weekday">Tu</div>
+                                        <div class="weekday">We</div>
+                                        <div class="weekday">Th</div>
+                                        <div class="weekday">Fr</div>
+                                        <div class="weekday">Sa</div>
+                                    </div>
+                                    <div class="calendar-days" id="calendarDays"></div>
+                                </div>
+                            </div>
+
+                            <div class="panel-section">
+                                <h3><i class="fas fa-clock"></i> Select Time</h3>
+                                <div class="time-slots-container" id="timeSlotsContainer">
+                                    <div class="time-slot-placeholder">Select a date first</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="panel-actions">
+                            <button type="button" class="btn-secondary" onclick="closeBookingFlow()">Cancel</button>
+                            <button type="button" class="btn-primary" onclick="goToPanel(2)" id="nextToPanel2" disabled>
+                                Next: Choose Service <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    {# ========== PANEL 2: Service & Barber Selection ========== #}
+                    <div class="booking-panel" id="panel2">
+                        <div class="panel-content">
+                            <div class="panel-section">
+                                <h3><i class="fas fa-cut"></i> Select Service</h3>
+                                <div class="service-grid">
+                                    {% for service in services %}
+                                        <div class="service-card" onclick="selectService({{ service.id }}, '{{ service.name|escapejs }}', {{ service.price }}, {{ service.duration }})">
+                                            <div class="service-card-header">
+                                                <h4>{{ service.name }}</h4>
+                                                <span class="service-price">${{ service.price }}</span>
+                                            </div>
+                                            <p class="service-description">{{ service.description|default:"Premium grooming service" }}</p>
+                                            <div class="service-meta">
+                                                <span><i class="fas fa-clock"></i> {{ service.duration }} min</span>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <div class="panel-section">
+                                <h3><i class="fas fa-user-tie"></i> Select Barber</h3>
+                                <div class="barber-grid">
+                                    {% for barber in barbers %}
+                                        <div class="barber-card" onclick="selectBarber({{ barber.id }}, '{{ barber.get_full_name|escapejs }}')">
+                                            <div class="barber-avatar">
+                                                <i class="fas fa-user"></i>
+                                            </div>
+                                            <h4>{{ barber.get_full_name }}</h4>
+                                            {% if barber.specialty %}
+                                                <p class="barber-specialty">{{ barber.specialty }}</p>
+                                            {% endif %}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="panel-actions">
+                            <button type="button" class="btn-secondary" onclick="goToPanel(1)">
+                                <i class="fas fa-arrow-left"></i> Back
+                            </button>
+                            <button type="button" class="btn-primary" onclick="goToPanel(3)" id="nextToPanel3" disabled>
+                                Next: Review Booking <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    {# ========== PANEL 3: Summary & Confirmation ========== #}
+                    <div class="booking-panel" id="panel3">
+                        <div class="panel-content">
+                            <div class="booking-summary">
+                                <h3><i class="fas fa-file-invoice"></i> Booking Summary</h3>
+                                
+                                <div class="summary-card">
+                                    <div class="summary-section">
+                                        <label><i class="fas fa-calendar"></i> Date & Time</label>
+                                        <div class="summary-value" id="summaryDateTime">Not selected</div>
+                                    </div>
+
+                                    <div class="summary-section">
+                                        <label><i class="fas fa-cut"></i> Service</label>
+                                        <div class="summary-value" id="summaryService">Not selected</div>
+                                        <div class="summary-meta" id="summaryServiceMeta"></div>
+                                    </div>
+
+                                    <div class="summary-section">
+                                        <label><i class="fas fa-user-tie"></i> Barber</label>
+                                        <div class="summary-value" id="summaryBarber">Not selected</div>
+                                    </div>
+
+                                    <div class="summary-total">
+                                        <span>Total Price</span>
+                                        <span class="total-amount" id="summaryPrice">$0.00</span>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="notes"><i class="fas fa-comment"></i> Special Requests (Optional)</label>
+                                    <textarea id="notes" name="notes" rows="3" placeholder="Any special instructions..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="panel-actions">
+                            <button type="button" class="btn-secondary" onclick="goToPanel(2)">
+                                <i class="fas fa-arrow-left"></i> Back
+                            </button>
+                            <button type="submit" class="btn-primary btn-confirm">
+                                <i class="fas fa-check-circle"></i> Confirm Booking
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </form>
+        </div>
+
+        {# -------- BOOKINGS LIST (Shown by default) -------- #}
+        <div class="bookings-container" id="bookingsContainer">
+            
+{# UPCOMING APPOINTMENTS #}
+<div class="bookings-section">
+    <div class="section-header">
+        <h2>
+            <i class="fas fa-calendar-alt"></i>
+            Upcoming Appointments
+        </h2>
+        <span class="count-badge">{{ upcoming_bookings|length }}</span>
+    </div>
+
+    {% if upcoming_bookings %}
+        <div class="bookings-grid">
+            {% for booking in upcoming_bookings %}
+                <div class="booking-card">
+                    <div class="booking-card-header">
+                        <div class="service-info">
+                            <h3 class="service-name">{{ booking.service_type.name }}</h3>
+                            <span class="booking-status status-{{ booking.status }}">
+                                {{ booking.get_status_display }}
+                            </span>
+                        </div>
+                        <div class="booking-price">${{ booking.price }}</div>
+                    </div>
+
+                    <div class="booking-card-body">
+                        <div class="booking-info-item">
+                            <i class="fas fa-user-tie"></i>
+                            <span>{{ booking.barber.get_full_name }}</span>
+                        </div>
+                        <div class="booking-info-item">
+                            <i class="fas fa-calendar"></i>
+                            <span>{{ booking.appointment_datetime|date:"F d, Y" }}</span>
+                        </div>
+                        <div class="booking-info-item">
+                            <i class="fas fa-clock"></i>
+                            <span>{{ booking.appointment_datetime|date:"g:i A" }} ({{ booking.duration }} min)</span>
+                        </div>
+                    </div>
+
+                    <div class="booking-card-actions">
+                        {# Always show View button #}
+                        <button type="button" class="btn-action" 
+                                onclick="viewBookingDetails(
+                                    {{ booking.id }}, 
+                                    '{{ booking.service_type.name|escapejs }}', 
+                                    '{{ booking.barber.get_full_name|escapejs }}', 
+                                    '{{ booking.appointment_datetime|date:"F d, Y" }}', 
+                                    '{{ booking.appointment_datetime|date:"g:i A" }}', 
+                                    {{ booking.duration }}, 
+                                    {{ booking.price }}, 
+                                    '{{ booking.status }}', 
+                                    '{{ booking.get_status_display|escapejs }}', 
+                                    '{{ booking.service_description|default:""|escapejs }}', 
+                                    true
+                                )">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        
+                      {# Reschedule button #}
+                      <form method="POST" action="{% url 'reschedule_booking' booking.id %}" style="display: inline;">
+                          {% csrf_token %}
+                          <input type="hidden" name="new_date" id="rescheduleNewDate">
+                          <input type="hidden" name="new_time" id="rescheduleNewTime">
+                          <button type="submit" class="btn-action btn-reschedule" onclick="return promptRescheduleDate(this.form, {{ booking.id }})">
+                              <i class="fas fa-calendar-alt"></i> Reschedule
+                          </button>
+                      </form>
+
+                      {# Cancel button #}
+                      <form method="POST" action="{% url 'cancel_booking' booking.id %}" style="display: inline;" 
+                            onsubmit="return confirm('Are you sure you want to cancel this booking?');">
+                          {% csrf_token %}
+                          <button type="submit" class="btn-action btn-cancel">
+                              <i class="fas fa-times"></i> Cancel
+                          </button>
+                      </form>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="fas fa-calendar-times"></i>
+            </div>
+            <h3>No Upcoming Appointments</h3>
+            <p>Book a service to get started</p>
+        </div>
+    {% endif %}
 </div>
+
+
+            {# PAST APPOINTMENTS - COLLAPSIBLE #}
+            <div class="bookings-section collapsible-section">
+                <div class="section-header" onclick="togglePastBookings()">
+                    <h2>
+                        <i class="fas fa-history"></i>
+                        Past Appointments
+                    </h2>
+                    <div class="header-actions">
+                        <span class="count-badge">{{ past_bookings|length }}</span>
+                        <button class="collapse-btn" id="collapseBtn" type="button">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="collapsible-content" id="pastBookingsContent">
+                    {% if past_bookings %}
+                        <div class="bookings-list compact">
+                            {% for booking in past_bookings %}
+                                <div class="booking-item-compact">
+                                    <div class="compact-left">
+                                        <div class="service-name-compact">{{ booking.service_type.name }}</div>
+                                        <div class="booking-meta">
+                                            <span><i class="fas fa-user"></i> {{ booking.barber.get_full_name }}</span>
+                                            <span><i class="fas fa-calendar"></i> {{ booking.appointment_datetime|date:"M d, Y" }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="compact-right">
+                                        <span class="booking-status status-{{ booking.status }}">
+                                            {{ booking.get_status_display }}
+                                        </span>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-state-small">
+                            <i class="fas fa-inbox"></i>
+                            <p>No past appointments yet</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    {# ==================== VIEW BOOKING DETAILS MODAL ==================== #}
+    <div class="modal-overlay" id="viewDetailsModal" style="display: none;" onclick="closeViewDetails(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3><i class="fas fa-file-alt"></i> Booking Details</h3>
+                <button type="button" class="close-modal-btn" onclick="closeViewDetails()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="detail-row">
+                    <span class="detail-label">Booking ID</span>
+                    <span class="detail-value" id="detailId">#0000</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Service</span>
+                    <span class="detail-value highlight" id="detailService">-</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Barber</span>
+                    <span class="detail-value" id="detailBarber">-</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Date</span>
+                    <span class="detail-value" id="detailDate">-</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Time</span>
+                    <span class="detail-value" id="detailTime">-</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Duration</span>
+                    <span class="detail-value" id="detailDuration">-</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Price</span>
+                    <span class="detail-value price" id="detailPrice">-</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Status</span>
+                    <span class="detail-value" id="detailStatus">-</span>
+                </div>
+                
+                <div class="detail-row" id="detailNotesRow" style="display: none;">
+                    <span class="detail-label">Notes</span>
+                    <span class="detail-value" id="detailNotes">-</span>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeViewDetails()">Close</button>
+                <div id="detailActions" style="display: flex; gap: 12px; margin-left: auto;">
+                    <!-- Action buttons inserted by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ==================== RESCHEDULE MODAL ==================== #}
+    <div class="modal-overlay" id="rescheduleModal" style="display: none;" onclick="closeRescheduleModal(event)">
+        <div class="modal-content modal-large" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3><i class="fas fa-calendar-alt"></i> Reschedule Appointment</h3>
+                <button type="button" class="close-modal-btn" onclick="closeRescheduleModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="current-booking-info">
+                    <h4>Current Booking</h4>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Service:</span>
+                            <span class="info-value" id="rescheduleCurrentService">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Barber:</span>
+                            <span class="info-value" id="rescheduleCurrentBarber">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Date:</span>
+                            <span class="info-value" id="rescheduleCurrentDate">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Time:</span>
+                            <span class="info-value" id="rescheduleCurrentTime">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <form method="POST" id="rescheduleForm">
+                    {% csrf_token %}
+                    
+                    <div class="reschedule-grid">
+                        <div class="reschedule-section">
+                            <h4><i class="fas fa-calendar"></i> New Date</h4>
+                            <div class="calendar-container-compact">
+                                <div class="calendar-header">
+                                    <button type="button" class="calendar-nav" onclick="previousRescheduleMonth()">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </button>
+                                    <div class="calendar-month" id="rescheduleCalendarMonth">January 2024</div>
+                                    <button type="button" class="calendar-nav" onclick="nextRescheduleMonth()">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                                <div class="calendar-weekdays">
+                                    <div class="weekday">Su</div>
+                                    <div class="weekday">Mo</div>
+                                    <div class="weekday">Tu</div>
+                                    <div class="weekday">We</div>
+                                    <div class="weekday">Th</div>
+                                    <div class="weekday">Fr</div>
+                                    <div class="weekday">Sa</div>
+                                </div>
+                                <div class="calendar-days" id="rescheduleCalendarDays"></div>
+                            </div>
+                        </div>
+
+                        <div class="reschedule-section">
+                            <h4><i class="fas fa-clock"></i> New Time</h4>
+                            <div class="time-slots-container" id="rescheduleTimeSlotsContainer">
+                                <div class="time-slot-placeholder">Select a date first</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <input type="hidden" name="new_date" id="rescheduleNewDate">
+                    <input type="hidden" name="new_time" id="rescheduleNewTime">
+                </form>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeRescheduleModal()">Cancel</button>
+                <button type="button" class="btn-primary" onclick="submitReschedule()" id="rescheduleSubmitBtn" disabled>
+                    <i class="fas fa-check"></i> Confirm Reschedule
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {# ===================== JavaScript ===================== #}
+    <script>
+        // ==================== BOOKING FLOW STATE ====================
+        let bookingData = {
+            date: null,
+            time: null,
+            service: null,
+            serviceName: null,
+            servicePrice: null,
+            serviceDuration: null,
+            barber: null,
+            barberName: null
+        };
+
+        let currentDate = new Date();
+        const minDate = new Date();
+        const maxDate = new Date();
+        maxDate.setMonth(maxDate.getMonth() + 3);
+
+        const businessHours = {
+            start: 9,
+            end: 18,
+            slotDuration: 30
+        };
+
+        // ==================== PANEL NAVIGATION ====================
+        function openBookingFlow() {
+            document.getElementById('bookingFlow').style.display = 'block';
+            document.getElementById('bookingsContainer').style.display = 'none';
+            renderCalendar();
+        }
+
+        function closeBookingFlow() {
+            document.getElementById('bookingFlow').style.display = 'none';
+            document.getElementById('bookingsContainer').style.display = 'block';
+            resetBookingData();
+        }
+
+        function goToPanel(panelNumber) {
+            document.querySelectorAll('.booking-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+
+            document.getElementById('panel' + panelNumber).classList.add('active');
+
+            document.querySelectorAll('.progress-step').forEach(step => {
+                const stepNum = parseInt(step.dataset.step);
+                if (stepNum < panelNumber) {
+                    step.classList.add('completed');
+                    step.classList.remove('active');
+                } else if (stepNum === panelNumber) {
+                    step.classList.add('active');
+                    step.classList.remove('completed');
+                } else {
+                    step.classList.remove('active', 'completed');
+                }
+            });
+
+            if (panelNumber === 3) {
+                updateSummary();
+            }
+        }
+
+        function resetBookingData() {
+            bookingData = {
+                date: null,
+                time: null,
+                service: null,
+                serviceName: null,
+                servicePrice: null,
+                serviceDuration: null,
+                barber: null,
+                barberName: null
+            };
+            goToPanel(1);
+        }
+
+        // ==================== CALENDAR FUNCTIONS ====================
+        function previousMonth() {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        }
+
+        function nextMonth() {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                               'July', 'August', 'September', 'October', 'November', 'December'];
+            document.getElementById('calendarMonth').textContent = `${monthNames[month]} ${year}`;
+            
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            const daysContainer = document.getElementById('calendarDays');
+            daysContainer.innerHTML = '';
+            
+            for (let i = 0; i < firstDay; i++) {
+                const emptyDay = document.createElement('div');
+                emptyDay.className = 'calendar-day empty';
+                daysContainer.appendChild(emptyDay);
+            }
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(year, month, day);
+                date.setHours(0, 0, 0, 0);
+                
+                const dayElement = document.createElement('div');
+                dayElement.className = 'calendar-day';
+                dayElement.textContent = day;
+                
+                if (date.getTime() === today.getTime()) {
+                    dayElement.classList.add('today');
+                }
+                
+                if (bookingData.date && date.toDateString() === new Date(bookingData.date).toDateString()) {
+                    dayElement.classList.add('selected');
+                }
+                
+                if (date < minDate || date > maxDate) {
+                    dayElement.classList.add('disabled');
+                } else {
+                    dayElement.classList.add('has-slots');
+                    dayElement.onclick = () => selectDate(date);
+                }
+                
+                daysContainer.appendChild(dayElement);
+            }
+        }
+
+        function selectDate(date) {
+            bookingData.date = date.toISOString().split('T')[0];
+            document.getElementById('final-date').value = bookingData.date;
+            renderCalendar();
+            generateTimeSlots(date);
+            checkPanel1Complete();
+        }
+
+        function generateTimeSlots(date) {
+            const container = document.getElementById('timeSlotsContainer');
+            container.innerHTML = '';
+            
+            const now = new Date();
+            const isToday = date.toDateString() === now.toDateString();
+            
+            for (let hour = businessHours.start; hour < businessHours.end; hour++) {
+                for (let minute = 0; minute < 60; minute += businessHours.slotDuration) {
+                    const slotTime = new Date(date);
+                    slotTime.setHours(hour, minute, 0, 0);
+                    
+                    if (isToday && slotTime <= now) continue;
+                    
+                    const slotElement = document.createElement('div');
+                    slotElement.className = 'time-slot';
+                    if (bookingData.time === `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`) {
+                        slotElement.classList.add('selected');
+                    }
+                    
+                    const timeStr = slotTime.toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                    });
+                    slotElement.textContent = timeStr;
+                    slotElement.onclick = () => selectTime(hour, minute);
+                    container.appendChild(slotElement);
+                }
+            }
+        }
+
+        function selectTime(hour, minute) {
+            bookingData.time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+            document.getElementById('final-time').value = bookingData.time;
+            
+            document.querySelectorAll('.time-slot').forEach(slot => slot.classList.remove('selected'));
+            event.target.classList.add('selected');
+            checkPanel1Complete();
+        }
+
+        function checkPanel1Complete() {
+            const btn = document.getElementById('nextToPanel2');
+            btn.disabled = !(bookingData.date && bookingData.time);
+        }
+
+        // ==================== SERVICE & BARBER SELECTION ====================
+        function selectService(id, name, price, duration) {
+            bookingData.service = id;
+            bookingData.serviceName = name;
+            bookingData.servicePrice = price;
+            bookingData.serviceDuration = duration;
+            document.getElementById('final-service').value = id;
+            
+            document.querySelectorAll('.service-card').forEach(card => card.classList.remove('selected'));
+            event.currentTarget.classList.add('selected');
+            checkPanel2Complete();
+        }
+
+        function selectBarber(id, name) {
+            bookingData.barber = id;
+            bookingData.barberName = name;
+            document.getElementById('final-barber').value = id;
+            
+            document.querySelectorAll('.barber-card').forEach(card => card.classList.remove('selected'));
+            event.currentTarget.classList.add('selected');
+            checkPanel2Complete();
+        }
+
+        function checkPanel2Complete() {
+            const btn = document.getElementById('nextToPanel3');
+            btn.disabled = !(bookingData.service && bookingData.barber);
+        }
+
+        // ==================== SUMMARY UPDATE ====================
+        function updateSummary() {
+            const dateObj = new Date(bookingData.date);
+            const dateStr = dateObj.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            const timeStr = new Date('2000-01-01 ' + bookingData.time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            
+            document.getElementById('summaryDateTime').textContent = `${dateStr} at ${timeStr}`;
+            document.getElementById('summaryService').textContent = bookingData.serviceName;
+            document.getElementById('summaryServiceMeta').textContent = `${bookingData.serviceDuration} minutes`;
+            document.getElementById('summaryBarber').textContent = bookingData.barberName;
+            document.getElementById('summaryPrice').textContent = `$${bookingData.servicePrice}`;
+        }
+
+        // ==================== VIEW DETAILS FUNCTIONALITY (FIXED) ====================
+        let currentViewBooking = {
+            id: null,
+            service: null,
+            barber: null,
+            date: null,
+            time: null,
+            canEdit: false
+        };
+
+        function viewBookingDetails(id, service, barber, date, time, duration, price, status, statusDisplay, notes, canBeCancelled) {
+            console.log('View Details Called - Can Cancel:', canBeCancelled);
+            
+            currentViewBooking = {
+                id: id,
+                service: service,
+                barber: barber,
+                date: date,
+                time: time,
+                canEdit: canBeCancelled
+            };
+            
+            document.getElementById('detailId').textContent = '#' + id;
+            document.getElementById('detailService').textContent = service;
+            document.getElementById('detailBarber').textContent = barber;
+            document.getElementById('detailDate').textContent = date;
+            document.getElementById('detailTime').textContent = time;
+            document.getElementById('detailDuration').textContent = duration + ' minutes';
+            document.getElementById('detailPrice').textContent = '$' + price;
+            
+            const statusSpan = document.getElementById('detailStatus');
+            statusSpan.innerHTML = `<span class="booking-status status-${status}">${statusDisplay}</span>`;
+            
+            const notesRow = document.getElementById('detailNotesRow');
+            if (notes && notes.trim()) {
+                document.getElementById('detailNotes').textContent = notes;
+                notesRow.style.display = 'flex';
+            } else {
+                notesRow.style.display = 'none';
+            }
+            
+            const actionsContainer = document.getElementById('detailActions');
+            actionsContainer.innerHTML = '';
+            
+            console.log('Creating buttons - canBeCancelled:', canBeCancelled);
+            
+            if (canBeCancelled === true || canBeCancelled === 'true' || canBeCancelled === 'True') {
+                console.log('Adding action buttons');
+                
+                const rescheduleBtn = document.createElement('button');
+                rescheduleBtn.type = 'button';
+                rescheduleBtn.className = 'btn-primary';
+                rescheduleBtn.innerHTML = '<i class="fas fa-calendar-alt"></i> Reschedule';
+                rescheduleBtn.onclick = function() {
+                    closeViewDetails();
+                    openRescheduleFlow(id, service, barber, date, time);
+                };
+                actionsContainer.appendChild(rescheduleBtn);
+                
+                const cancelBtn = document.createElement('button');
+                cancelBtn.type = 'button';
+                cancelBtn.className = 'btn-danger';
+                cancelBtn.innerHTML = '<i class="fas fa-times"></i> Cancel Booking';
+                cancelBtn.onclick = function() {
+                    if (confirm('Are you sure you want to cancel this booking?')) {
+                        const form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = `/dashboard/customer/booking/${id}/cancel/`;
+                        
+                        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+                        if (csrfToken) {
+                            const csrfInput = document.createElement('input');
+                            csrfInput.type = 'hidden';
+                            csrfInput.name = 'csrfmiddlewaretoken';
+                            csrfInput.value = csrfToken.value;
+                            form.appendChild(csrfInput);
+                        }
+                        
+                        document.body.appendChild(form);
+                        form.submit();
+                    }
+                };
+                actionsContainer.appendChild(cancelBtn);
+            } else {
+                console.log('No action buttons - booking cannot be cancelled');
+            }
+            
+            document.getElementById('viewDetailsModal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeViewDetails(event) {
+            if (!event || event.target.classList.contains('modal-overlay') || event.target.classList.contains('close-modal-btn')) {
+                document.getElementById('viewDetailsModal').style.display = 'none';
+                document.body.style.overflow = 'auto';
+                currentViewBooking = { id: null, service: null, barber: null, date: null, time: null, canEdit: false };
+            }
+        }
+
+        // ==================== RESCHEDULE FUNCTIONALITY ====================
+        let rescheduleCurrentDate = new Date();
+        let rescheduleData = {
+            bookingId: null,
+            date: null,
+            time: null
+        };
+
+        function openRescheduleFlow(bookingId, service, barber, date, time) {
+            rescheduleData.bookingId = bookingId;
+            rescheduleData.date = null;
+            rescheduleData.time = null;
+            
+            document.getElementById('rescheduleCurrentService').textContent = service;
+            document.getElementById('rescheduleCurrentBarber').textContent = barber;
+            document.getElementById('rescheduleCurrentDate').textContent = date;
+            document.getElementById('rescheduleCurrentTime').textContent = time;
+            
+            document.getElementById('rescheduleModal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            
+            renderRescheduleCalendar();
+        }
+
+        function closeRescheduleModal(event) {
+            if (!event || event.target.classList.contains('modal-overlay') || event.target.classList.contains('close-modal-btn')) {
+                document.getElementById('rescheduleModal').style.display = 'none';
+                document.body.style.overflow = 'auto';
+                rescheduleData = { bookingId: null, date: null, time: null };
+            }
+        }
+
+        function previousRescheduleMonth() {
+            rescheduleCurrentDate.setMonth(rescheduleCurrentDate.getMonth() - 1);
+            renderRescheduleCalendar();
+        }
+
+        function nextRescheduleMonth() {
+            rescheduleCurrentDate.setMonth(rescheduleCurrentDate.getMonth() + 1);
+            renderRescheduleCalendar();
+        }
+
+        function renderRescheduleCalendar() {
+            const year = rescheduleCurrentDate.getFullYear();
+            const month = rescheduleCurrentDate.getMonth();
+            
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                               'July', 'August', 'September', 'October', 'November', 'December'];
+            document.getElementById('rescheduleCalendarMonth').textContent = `${monthNames[month]} ${year}`;
+            
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            const daysContainer = document.getElementById('rescheduleCalendarDays');
+            daysContainer.innerHTML = '';
+            
+            for (let i = 0; i < firstDay; i++) {
+                const emptyDay = document.createElement('div');
+                emptyDay.className = 'calendar-day empty';
+                daysContainer.appendChild(emptyDay);
+            }
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(year, month, day);
+                date.setHours(0, 0, 0, 0);
+                
+                const dayElement = document.createElement('div');
+                dayElement.className = 'calendar-day';
+                dayElement.textContent = day;
+                
+                if (date.getTime() === today.getTime()) {
+                    dayElement.classList.add('today');
+                }
+                
+                if (rescheduleData.date && date.toDateString() === new Date(rescheduleData.date).toDateString()) {
+                    dayElement.classList.add('selected');
+                }
+                
+                if (date < minDate || date > maxDate) {
+                    dayElement.classList.add('disabled');
+                } else {
+                    dayElement.classList.add('has-slots');
+                    dayElement.onclick = () => selectRescheduleDate(date);
+                }
+                
+                daysContainer.appendChild(dayElement);
+            }
+        }
+
+        function selectRescheduleDate(date) {
+            rescheduleData.date = date.toISOString().split('T')[0];
+            document.getElementById('rescheduleNewDate').value = rescheduleData.date;
+            renderRescheduleCalendar();
+            generateRescheduleTimeSlots(date);
+            checkRescheduleComplete();
+        }
+
+        function generateRescheduleTimeSlots(date) {
+            const container = document.getElementById('rescheduleTimeSlotsContainer');
+            container.innerHTML = '';
+            
+            const now = new Date();
+            const isToday = date.toDateString() === now.toDateString();
+            
+            for (let hour = businessHours.start; hour < businessHours.end; hour++) {
+                for (let minute = 0; minute < 60; minute += businessHours.slotDuration) {
+                    const slotTime = new Date(date);
+                    slotTime.setHours(hour, minute, 0, 0);
+                    
+                    if (isToday && slotTime <= now) continue;
+                    
+                    const slotElement = document.createElement('div');
+                    slotElement.className = 'time-slot';
+                    if (rescheduleData.time === `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`) {
+                        slotElement.classList.add('selected');
+                    }
+                    
+                    const timeStr = slotTime.toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                    });
+                    slotElement.textContent = timeStr;
+                    slotElement.onclick = () => selectRescheduleTime(hour, minute);
+                    container.appendChild(slotElement);
+                }
+            }
+        }
+
+        function selectRescheduleTime(hour, minute) {
+            rescheduleData.time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+            document.getElementById('rescheduleNewTime').value = rescheduleData.time;
+            
+            document.querySelectorAll('#rescheduleTimeSlotsContainer .time-slot').forEach(slot => slot.classList.remove('selected'));
+            event.target.classList.add('selected');
+            checkRescheduleComplete();
+        }
+
+        function checkRescheduleComplete() {
+            const btn = document.getElementById('rescheduleSubmitBtn');
+            btn.disabled = !(rescheduleData.date && rescheduleData.time);
+        }
+
+        function submitReschedule() {
+            const form = document.getElementById('rescheduleForm');
+            form.action = `/dashboard/customer/booking/${rescheduleData.bookingId}/reschedule/`;
+            form.submit();
+        }
+
+        function promptRescheduleDate(form, bookingId) {
+            const newDate = prompt('Enter new date (YYYY-MM-DD):');
+            if (!newDate) return false;
+            
+            const newTime = prompt('Enter new time (HH:MM):');
+            if (!newTime) return false;
+            
+            // Set hidden input values
+            form.querySelector('[name="new_date"]').value = newDate;
+            form.querySelector('[name="new_time"]').value = newTime;
+            
+            return true; // Submit the form
+        }
+
+
+        // ==================== PAST BOOKINGS COLLAPSE ====================
+        function togglePastBookings() {
+            const content = document.getElementById('pastBookingsContent');
+            const btn = document.getElementById('collapseBtn');
+            const icon = btn.querySelector('i');
+            
+            if (content.classList.contains('collapsed')) {
+                content.classList.remove('collapsed');
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            } else {
+                content.classList.add('collapsed');
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            renderCalendar();
+        });
+    </script>
 </body>
 </html>
