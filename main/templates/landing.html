@@ -27,7 +27,7 @@
     {% if user.is_authenticated %}
       <a
         href="{% if user.barber %}{% url 'barber_dashboard' %}{% else %}{% url 'customer_dashboard' %}{% endif %}"
-        class="btn btn-light"
+        class="nav-link"
       >Dashboard</a>
 
       <form method="post" action="{% url 'customer_dashboard' %}" class="inline-form">
@@ -35,7 +35,6 @@
         <button type="submit" class="btn btn-glass">Book Now</button>
       </form>
     {% else %}
-    <!--Get Started seems redundant-->
       <a href="{% url 'auth' %}" class="btn btn-light">Get Started</a>
       <a href="{% url 'auth' %}" class="btn btn-glass">Book Now</a>
     {% endif %}
@@ -49,7 +48,7 @@
     <p class="kicker">Premium Grooming Experience</p>
     <h2 id="hero-title" class="hero-title-giant">TRIMLY</h2>
     <p class="hero-sub hero-sub-wide">
-      Where style meets precision. Book an appointment and discover why we’re the premier destination for discerning gentlemen.
+      Where style meets precision. Book an appointment and discover why we're the premier destination for discerning gentlemen.
     </p>
     <div class="hero-cta">
       <a href="#services" class="btn btn-ghost">View Services</a>
@@ -63,19 +62,14 @@
 </section>
 
 <!-- Services -->
-<section id="services" class="services services-dark">
+<section id="services" class="services-dark">
   <div class="container">
     <div class="services-head">
-      <div class="services-kicker">
-        <span class="rule"></span>
-        <span class="kicker-text">Our Services</span>
-        <span class="rule"></span>
-      </div>
-      <h3 class="services-title">Premium Grooming</h3>
+      <h3 class="services-title">Our Services</h3>
       <p class="services-sub">Choose from our expertly crafted services designed to elevate your style</p>
     </div>
 
-    <div class="services-grid services-grid-xl">
+    <div class="services-grid">
       <article class="svc-card svc-glass" tabindex="0">
         <div class="svc-icon-tile"><span class="svc-icon">✂</span></div>
         <h4 class="svc-name">Classic Cut</h4>
@@ -125,7 +119,7 @@
 
   // Scroll-to-top
   const scrollBtn = document.getElementById('scrollToTopBtn');
-  const showAt = 250; // px
+  const showAt = 250;
   const onScroll = () => {
     if (window.scrollY > showAt) scrollBtn.classList.add('scrolltop--show');
     else scrollBtn.classList.remove('scrolltop--show');
