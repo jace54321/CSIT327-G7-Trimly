@@ -1,0 +1,160 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Schedule - Trimly</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'barber_dashboard.css' %}">
+  <style>
+    /* Additional styles for schedule page */
+    .schedule-manager {
+      display: flex;
+      gap: 30px;
+      margin-top: 20px;
+    }
+    .schedule-form, .schedule-list-container {
+      flex: 1;
+      padding: 20px;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    .schedule-form h3, .schedule-list-container h3 {
+      margin-top: 0;
+      border-bottom: 2px solid #f0f0f0;
+      padding-bottom: 10px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    .form-group input[type="date"],
+    .form-group input[type="time"] {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box; /* Important */
+    }
+    .btn-primary {
+      background-color: #007bff;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 600;
+      width: 100%;
+    }
+    .btn-primary:hover {
+      background-color: #0056b3;
+    }
+    .schedule-list-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .schedule-list-item:last-child {
+      border-bottom: none;
+    }
+    .btn-delete-schedule {
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-left">
+      <h1 class="logo">Trimly</h1>
+    </div>
+    <ul class="nav-links">
+      <li><a href="{% url 'barber_dashboard' %}">Dashboard</a></li>
+      <li><a href="{% url 'barber_schedule' %}" class="active">Schedule</a></li>
+    </ul>
+    <div class="nav-right">
+      <span>Welcome, {{ request.user.username }}</span>
+     <a href="{% url 'logout' %}" class="logout-btn">Logout</a>
+    </div>
+  </nav>
+
+  <section class="dashboard" style="padding: 20px;">
+    
+    <h2>Manage Availability</h2>
+    <p>Add or remove your working hours. Customers can only book appointments during these times.</p>
+
+    {% if messages %}
+    <div class="messages-container" style="padding: 0; margin-bottom: 15px;">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}" style="background-color: #f8d7da; color: #721c24; padding: 10px; border-radius: 5px;">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="schedule-manager">
+      <div class="schedule-form">
+        <h3>Add New Time Slot</h3>
+        <form method="POST" action="{% url 'barber_schedule' %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="create">
+          
+          <div class="form-group">
+            <label for="date">Date</label>
+            <input type="date" id="date" name="date" min="{{ today_str }}" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="start_time">Start Time</label>
+            <input type="time" id="start_time" name="start_time" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="end_time">End Time</label>
+            <input type="time" id="end_time" name="end_time" required>
+          </div>
+          
+          <button type="submit" class="btn-primary">Add Availability</button>
+        </.form>
+      </div>
+
+      <div class="schedule-list-container">
+        <h3>Upcoming Availability</h3>
+        <div class="schedule-list">
+          {% for schedule in schedules %}
+            <div class="schedule-list-item">
+              <div>
+                <strong>{{ schedule.date|date:"l, M d, Y" }}</strong><br>
+                <span>{{ schedule.start_time|time:"g:i A" }} - {{ schedule.end_time|time:"g:i A" }}</span>
+              </div>
+              <form method="POST" action="{% url 'barber_schedule' %}" onsubmit="return confirm('Are you sure? This will not delete existing bookings.');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="schedule_id" value="{{ schedule.id }}">
+                <button type="submit" class="btn-delete-schedule">Delete</button>
+              </form>
+            </div>
+          {% empty %}
+            <p>No upcoming availability set. Add a time slot to start receiving bookings.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </section>
+</body>
+</html>

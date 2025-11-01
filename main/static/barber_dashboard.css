@@ -243,3 +243,107 @@ input:checked + .slider:before {
   color: #a5a5a5;
   padding: 20px;
 }
+
+/* Add this to your barber_dashboard.css */
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.status-pending { background-color: #ffc107; color: #333; }
+.status-confirmed { background-color: #28a745; color: white; }
+.status-in_progress { background-color: #17a2b8; color: white; }
+.status-completed { background-color: #6c757d; color: white; }
+.status-cancelled { background-color: #dc3545; color: white; }
+
+.schedule-list {
+  list-style: none;
+  padding: 0;
+  margin-top: 1rem;
+}
+.schedule-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 10px;
+  border-bottom: 1px solid #eee;
+}
+.schedule-item .time { font-weight: 700; width: 20%; }
+.schedule-item .service { font-weight: 600; width: 30%; }
+.schedule-item .customer { width: 30%; color: #555; }
+.schedule-item .status { 
+  font-weight: 600; 
+  width: 20%; 
+  text-align: right; 
+}
+.schedule-pending .status { color: #ffc107; }
+.schedule-confirmed .status { color: #28a745; }
+.schedule-in_progress .status { color: #17a2b8; }
+
+/* Add this to barber_dashboard.css for the new action buttons */
+
+.schedule-item .status-actions {
+  width: 25%;
+  text-align: right;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.schedule-item .status-text-static {
+  font-weight: 600;
+  text-transform: capitalize;
+  color: #6c757d;
+}
+
+.action-form {
+  display: inline-block;
+  margin: 0;
+}
+
+.btn-action {
+  padding: 4px 10px;
+  border: none;
+  border-radius: 5px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-confirm {
+  background-color: #28a745;
+  color: white;
+}
+.btn-confirm:hover {
+  background-color: #218838;
+}
+
+.btn-reject {
+  background-color: #dc3545;
+  color: white;
+}
+.btn-reject:hover {
+  background-color: #c82333;
+}
+
+.btn-complete {
+  background-color: #007bff;
+  color: white;
+}
+.btn-complete:hover {
+  background-color: #0069d9;
+}
+
+.actions-cell {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+/* Adjust schedule item widths to make space for buttons */
+.schedule-item .time { width: 15%; }
+.schedule-item .service { width: 25%; }
+.schedule-item .customer { width: 25%; }
+.schedule-item .status-actions { width: 35%; }

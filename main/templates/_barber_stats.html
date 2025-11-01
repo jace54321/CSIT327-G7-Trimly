@@ -1,0 +1,21 @@
+{% load static %}
+<div class="card">
+  <p>Today's Appointments</p>
+  <h3>{{ stats_today_count }}</h3>
+  <small>Scheduled for today</small>
+</div>
+<div class="card">
+  <p>This Week</p>
+  <h3>{{ stats_week_count }}</h3>
+  <small>Total bookings</small>
+</div>
+<div class="card">
+  <p>Completed</p>
+  <h3>{{ stats_completed_count }}</h3>
+  <small>Successfully completed</small>
+</div>
+<div class="card">
+  <p>Average Rating</p>
+  <h3>{{ barber.average_rating|default:"0.0" }}</h3>
+  <small>Customer satisfaction</small>
+</div>

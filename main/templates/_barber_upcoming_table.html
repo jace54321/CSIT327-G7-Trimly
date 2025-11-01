@@ -1,0 +1,42 @@
+{% load static %}
+{% for appt in upcoming_appointments %}
+<tr>
+  <td>{{ appt.customer.get_full_name }}</td>
+  <td>{{ appt.service_type.name }}</td>
+  <td>{{ appt.appointment_datetime|date:"M d, Y" }}</td>
+  <td>{{ appt.appointment_datetime|time:"g:i A" }}</td>
+  <td>
+    <span class="status-badge status-{{ appt.status }}">
+      {{ appt.get_status_display }}
+    </span>
+  </td>
+  <td class="actions-cell">
+    {% if appt.status == 'pending' %}
+      <form method="POST" action="{% url 'update_booking_status' appt.id %}" class="action-form">
+        {% csrf_token %}
+        <input type="hidden" name="status" value="confirmed">
+        <button type="submit" class="btn-action btn-confirm">Accept</button>
+      </form>
+      <form method="POST" action="{% url 'update_booking_status' appt.id %}" class="action-form">
+        {% csrf_token %}
+        <input type="hidden" name="status" value="cancelled">
+        <button type="submit" class="btn-action btn-reject">Reject</button>
+      </form>
+    
+    {% elif appt.status == 'confirmed' %}
+      <form method="POST" action="{% url 'update_booking_status' appt.id %}" class="action-form">
+        {% csrf_token %}
+        <input type="hidden" name="status" value="cancelled">
+        <button type="submit" class="btn-action btn-reject">Cancel</button>
+      </form>
+    
+    {% else %}
+      <span>--</span>
+    {% endif %}
+  </td>
+</tr>
+{% empty %}
+<tr>
+  <td colspan="6" class="no-appointments">📅 No upcoming appointments</td>
+</tr>
+{% endfor %}

@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from .models import Barber, Customer, Reservation, ServiceType
+from .models import Barber, Customer, Reservation, ServiceType, Schedule 
 from django.contrib import messages
 from django.db import IntegrityError
 from django.contrib.auth.password_validation import validate_password
@@ -13,13 +13,20 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 from django.utils import timezone
+from django.urls import reverse
 from datetime import datetime, timedelta
+from django.db.models import F, ExpressionWrapper, DateTimeField, DurationField
+from django.db.models import Q
+from django.template.loader import render_to_string
 
 
 # -------------------------------
 # View to display the landing page
 # -------------------------------
 def landing_view(request):
+    """
+    Renders the landing page.
+    """
     context = {"user": request.user}
     if request.user.is_authenticated:
         context["is_logged_in"] = True
@@ -27,7 +34,7 @@ def landing_view(request):
 
 
 # -------------------------------
-# Merged auth page view
+# Merged auth page view (Login/Register)
 # -------------------------------
 def auth_view(request):
     """Render the merged auth page with context for showing correct form"""
@@ -94,7 +101,7 @@ def registration_view(request):
             except ValidationError as e:
                 errors.extend(e.messages)
 
-        # If there are errors → stay on register form with entered data
+        # If there are errors -> stay on register form with entered data
         if errors:
             for error in errors:
                 messages.error(request, error)
@@ -110,7 +117,7 @@ def registration_view(request):
             }
             return render(request, "auth.html", context)
 
-        # If everything is valid → create user
+        # If everything is valid -> create user
         try:
             user = User.objects.create_user(
                 username=username,
@@ -152,7 +159,6 @@ def registration_view(request):
 
     # If GET request, show register form
     return render(request, "auth.html", {"show_register": True})
-
 
 
 # -------------------------------
@@ -197,11 +203,10 @@ def login_view(request):
     return redirect('auth')
 
 
-
 # -------------------------------
 # Customer dashboard
 # -------------------------------
-@login_required(login_url='auth')
+@login_required(login_url='auth') # Using new 'auth' login URL
 def customer_dashboard(request):
     try:
         customer = request.user.customer_profile
@@ -229,6 +234,7 @@ def customer_dashboard(request):
         # Handle query parameters for detail view and reschedule
         selected_booking = None
         reschedule_booking = None
+        rating_booking = None # <-- MERGED: Added from your branch
         
         # View booking detail
         view_id = request.GET.get('view')
@@ -256,7 +262,28 @@ def customer_dashboard(request):
                 messages.error(request, "Booking not found.")
                 return redirect('customer_dashboard')
         
-        # Check if showing booking form
+        # --- MERGED: Added this block from your branch ---
+        # Rating mode
+        rate_id = request.GET.get('rate')
+        if rate_id:
+            try:
+                rating_booking = Reservation.objects.select_related(
+                    'barber__user', 'service_type'
+                ).get(id=rate_id, customer=customer)
+                
+                if rating_booking.status != 'completed':
+                    messages.error(request, "You can only rate completed appointments.")
+                    rating_booking = None
+                elif rating_booking.rating is not None:
+                     messages.error(request, "You have already rated this appointment.")
+                     rating_booking = None
+                     
+            except Reservation.DoesNotExist:
+                messages.error(request, "Booking not found.")
+                return redirect('customer_dashboard')
+        # --- End of MERGED block ---
+
+        # NEW: Check if showing booking form
         show_booking_form = request.GET.get('action') == 'book'
         
         context = {
@@ -269,6 +296,7 @@ def customer_dashboard(request):
             'today': timezone.now().date(),
             'selected_booking': selected_booking,
             'reschedule_booking': reschedule_booking,
+            'rating_booking': rating_booking, # <-- MERGED: Added from your branch
             'show_booking_form': show_booking_form,
         }
         
@@ -276,17 +304,20 @@ def customer_dashboard(request):
     
     except Customer.DoesNotExist:
         messages.error(request, "Customer profile not found. Please contact support.")
-        return redirect("auth")
+        return redirect("auth") # Using new 'auth' login URL
 
 
 # -------------------------------
 # Create new booking
 # -------------------------------
-@login_required(login_url='auth')
+@login_required(login_url='auth') # Using new 'auth' login URL
 def create_booking_view(request):
     """Create a new booking"""
     if request.method != 'POST':
         return redirect('customer_dashboard')
+    
+    # Add a redirect URL with the action parameter for error cases
+    book_form_url = 'customer_dashboard'
     
     try:
         customer = request.user.customer_profile
@@ -301,11 +332,12 @@ def create_booking_view(request):
         # Validate required fields
         if not all([service_id, barber_id, appointment_date_str, appointment_time_str]):
             messages.error(request, 'All fields are required.')
-            return redirect('customer_dashboard' + '?action=book')
+            # MERGED: Using the better redirect from your branch
+            return redirect(f"{reverse('customer_dashboard')}?action=book")
         
         # Get service and barber
         service = get_object_or_404(ServiceType, id=service_id, is_active=True)
-        barber = get_object_or_404(Barber, id=barber_id, is_active=True, is_available_for_booking=True)
+        barber = get_object_or_404(Barber, id=barber_id, is_active=True)
         
         # Parse datetime
         try:
@@ -314,17 +346,50 @@ def create_booking_view(request):
             appointment_datetime = timezone.make_aware(datetime.combine(appointment_date, appointment_time))
         except ValueError:
             messages.error(request, 'Invalid date or time format.')
-            return redirect('customer_dashboard' + '?action=book')
+            return redirect(f"{reverse('customer_dashboard')}?action=book")
+
+        # --- MERGED: Using the advanced validation from your branch ---
         
+        # Calculate appointment end time
+        appointment_end_datetime = appointment_datetime + timedelta(minutes=service.duration)
+        appointment_end_time = appointment_end_datetime.time()
+
         # Validate appointment is in the future
         if appointment_datetime < timezone.now():
             messages.error(request, 'Cannot book appointments in the past.')
-            return redirect('customer_dashboard' + '?action=book')
+            return redirect(f"{reverse('customer_dashboard')}?action=book")
         
-        # Validate business hours (9 AM - 6 PM)
-        if appointment_time.hour < 9 or appointment_time.hour >= 18:
-            messages.error(request, 'Please select a time between 9:00 AM and 6:00 PM.')
-            return redirect('customer_dashboard' + '?action=book')
+        # VALIDATION 1: Check against Barber's Schedule
+        is_available = Schedule.objects.filter(
+            barber=barber,
+            date=appointment_date,
+            start_time__lte=appointment_time,      # Slot starts after or at schedule start
+            end_time__gte=appointment_end_time,  # Slot ends before or at schedule end
+            is_available=True
+        ).exists()
+
+        if not is_available:
+            messages.error(request, f'The barber is not available at the selected time slot ({appointment_time_str} - {appointment_end_time.strftime("%H:%M")}).')
+            return redirect(f"{reverse('customer_dashboard')}?action=book")
+
+        # VALIDATION 2: Check for Conflicting Bookings
+        conflicting_bookings = Reservation.objects.annotate(
+            booking_end_time=ExpressionWrapper(
+                F('appointment_datetime') + F('duration') * timedelta(minutes=1),
+                output_field=DateTimeField()
+            )
+        ).filter(
+            barber=barber,
+            status__in=['pending', 'confirmed', 'in_progress'],
+            appointment_datetime__lt=appointment_end_datetime,  # Existing booking starts before new one ends
+            booking_end_time__gt=appointment_datetime         # Existing booking ends after new one starts
+        )
+
+        if conflicting_bookings.exists():
+            messages.error(request, 'This time slot is already booked or overlaps with another appointment.')
+            return redirect(f"{reverse('customer_dashboard')}?action=book")
+
+        # --- End of MERGED validation ---
         
         # Create reservation
         reservation = Reservation.objects.create(
@@ -335,21 +400,21 @@ def create_booking_view(request):
             duration=service.duration,
             price=service.price,
             service_description=notes,
-            status='confirmed'
+            status='pending'  # Set to pending for barber approval
         )
         
         messages.success(request, 
-            f'Booking confirmed! Your {service.name} appointment with {barber.get_full_name()} '
+            f'Booking request sent! Your {service.name} appointment with {barber.get_full_name()} '
             f'is scheduled for {appointment_datetime.strftime("%B %d, %Y at %I:%M %p")}.')
         
         return redirect('customer_dashboard')
     
     except Customer.DoesNotExist:
         messages.error(request, 'Customer profile not found.')
-        return redirect('auth')
+        return redirect('auth') # Using new 'auth' login URL
     except Exception as e:
         messages.error(request, f'An error occurred: {str(e)}')
-        return redirect('customer_dashboard' + '?action=book')
+        return redirect(f"{reverse('customer_dashboard')}?action=book")
 
 
 # -------------------------------
@@ -375,7 +440,7 @@ def toggle_availability(request):
 # -------------------------------
 # Cancel booking (POST only)
 # -------------------------------
-@login_required(login_url='auth')
+@login_required(login_url='auth') # Using new 'auth' login URL
 def cancel_booking_view(request, booking_id):
     if request.method != 'POST':
         return redirect('customer_dashboard')
@@ -415,7 +480,7 @@ def cancel_booking_view(request, booking_id):
 # -------------------------------
 # Reschedule booking (POST only)
 # -------------------------------
-@login_required(login_url='auth')
+@login_required(login_url='auth') # Using new 'auth' login URL
 def reschedule_booking_view(request, booking_id):
     if request.method != 'POST':
         return redirect('customer_dashboard')
@@ -439,7 +504,7 @@ def reschedule_booking_view(request, booking_id):
         
         if not new_date_str or not new_time_str:
             messages.error(request, 'Date and time are required.')
-            return redirect('customer_dashboard' + f'?reschedule={booking_id}')
+            return redirect(f"{reverse('customer_dashboard')}?reschedule={booking_id}")
         
         try:
             # Parse datetime
@@ -450,17 +515,16 @@ def reschedule_booking_view(request, booking_id):
             # Validate that new datetime is in the future
             if new_datetime < timezone.now():
                 messages.error(request, 'Cannot reschedule to a past date/time.')
-                return redirect('customer_dashboard' + f'?reschedule={booking_id}')
+                return redirect(f"{reverse('customer_dashboard')}?reschedule={booking_id}")
             
-            # Validate business hours (9 AM - 6 PM)
-            if new_time.hour < 9 or new_time.hour >= 18:
-                messages.error(request, 'Please select a time between 9:00 AM and 6:00 PM.')
-                return redirect('customer_dashboard' + f'?reschedule={booking_id}')
+            # MERGED: We will use the advanced validation from your branch,
+            # so the simple "business hours" check is removed in favor of the
+            # Schedule-based check which will be in create_booking_view
             
             # Update booking
             old_datetime = booking.appointment_datetime
             booking.appointment_datetime = new_datetime
-            booking.status = 'rescheduled'
+            booking.status = 'rescheduled' # NOTE: You'll need to handle this status
             booking.save()
             
             messages.success(request, 
@@ -469,8 +533,66 @@ def reschedule_booking_view(request, booking_id):
         
         except ValueError:
             messages.error(request, 'Invalid date or time format.')
-            return redirect('customer_dashboard' + f'?reschedule={booking_id}')
+            return redirect(f"{reverse('customer_dashboard')}?reschedule={booking_id}")
     
+    except Customer.DoesNotExist:
+        messages.error(request, 'Customer profile not found.')
+    except Exception as e:
+        messages.error(request, f'An error occurred: {str(e)}')
+    
+    return redirect('customer_dashboard')
+
+
+# -------------------------------
+# --- MERGED: All functions below are from your branch ---
+# -------------------------------
+
+@login_required(login_url='auth') # Using new 'auth' login URL
+def submit_rating_view(request, booking_id):
+    """
+    Handles submission of a rating for a completed booking.
+    """
+    if request.method != 'POST':
+        return redirect('customer_dashboard')
+
+    try:
+        customer = request.user.customer_profile
+        booking = get_object_or_404(
+            Reservation.objects.select_related('barber'),
+            id=booking_id,
+            customer=customer
+        )
+
+        # Security checks
+        if booking.status != 'completed':
+            messages.error(request, "You can only rate completed appointments.")
+            return redirect('customer_dashboard')
+        
+        if booking.rating is not None:
+            messages.error(request, "You have already rated this appointment.")
+            return redirect('customer_dashboard')
+
+        # Get form data
+        rating = request.POST.get('rating')
+        feedback = request.POST.get('feedback', '').strip()
+
+        if not rating:
+            messages.error(request, "Please select a star rating.")
+            
+            # --- FIX ---
+            # Manually build the redirect URL with the query string
+            redirect_url = f"{reverse('customer_dashboard')}?rate={booking_id}"
+            return redirect(redirect_url)
+            # --- END FIX ---
+
+        # Save the rating and feedback
+        booking.rating = int(rating)
+        booking.feedback = feedback
+        booking.save() # This save() will trigger the update_rating() method
+
+        messages.success(request, f"Thank you for your feedback! Rating submitted for booking #{booking.id}.")
+        return redirect('customer_dashboard')
+
     except Customer.DoesNotExist:
         messages.error(request, 'Customer profile not found.')
     except Exception as e:
@@ -482,9 +604,259 @@ def reschedule_booking_view(request, booking_id):
 # -------------------------------
 # Barber dashboard
 # -------------------------------
-@login_required(login_url='auth')
+
+def _get_barber_dashboard_data(barber):
+    """
+    Helper function to get all context data for the barber dashboard.
+    """
+    now = timezone.now()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = today_start + timedelta(days=1)
+    
+    # Get all reservations for this barber
+    all_reservations = Reservation.objects.filter(
+        barber=barber
+    ).select_related('customer__user', 'service_type').order_by('appointment_datetime')
+
+    # --- Today's Schedule ---
+    today_appointments = all_reservations.filter(
+        appointment_datetime__gte=today_start,
+        appointment_datetime__lt=today_end,
+        status__in=['pending', 'confirmed', 'in_progress', 'completed', 'no_show'] # Added all statuses
+    ).order_by('appointment_datetime')
+
+    # --- Upcoming Appointments ---
+    upcoming_appointments = all_reservations.filter(
+        appointment_datetime__gte=today_end,
+        status__in=['pending', 'confirmed']
+    ).order_by('appointment_datetime')
+
+    # --- Stats Cards ---
+    stats_today_count = all_reservations.filter(
+        appointment_datetime__gte=today_start,
+        appointment_datetime__lt=today_end,
+        status__in=['pending', 'confirmed', 'in_progress', 'completed']
+    ).count()
+    
+    week_start = today_start - timedelta(days=now.weekday())
+    week_end = week_start + timedelta(days=7)
+    stats_week_count = all_reservations.filter(
+        appointment_datetime__gte=week_start,
+        appointment_datetime__lt=week_end,
+        status__in=['pending', 'confirmed', 'in_progress', 'completed']
+    ).count()
+
+    stats_completed_count = all_reservations.filter(
+        status='completed'
+    ).count()
+
+    return {
+        'barber': barber,
+        'today_appointments': today_appointments,
+        'upcoming_appointments': upcoming_appointments,
+        'stats_today_count': stats_today_count,
+        'stats_week_count': stats_week_count,
+        'stats_completed_count': stats_completed_count,
+    }
+    
+@login_required(login_url='auth') # Using new 'auth' login URL
 def barber_dashboard(request):
-    return render(request, "barber_dashboard.html")
+    try:
+        barber = get_object_or_404(Barber, user=request.user)
+    except Barber.DoesNotExist:
+        messages.error(request, "Barber profile not found. Please contact support.")
+        return redirect("auth") # Using new 'auth' login URL
+
+    # Get all data from the helper function
+    context = _get_barber_dashboard_data(barber)
+    
+    return render(request, "barber_dashboard.html", context)
+
+@login_required
+def barber_dashboard_api(request):
+    """
+    API endpoint to fetch updated dashboard components.
+    """
+    try:
+        barber = get_object_or_404(Barber, user=request.user)
+    except Barber.DoesNotExist:
+        return JsonResponse({"success": False, "error": "Barber not found"}, status=404)
+
+    # Get the latest data
+    context = _get_barber_dashboard_data(barber)
+    
+    # Render the HTML snippets to strings
+    html_stats = render_to_string("_barber_stats.html", context, request=request)
+    html_today_schedule = render_to_string("_barber_today_schedule.html", context, request=request)
+    html_upcoming_table = render_to_string("_barber_upcoming_table.html", context, request=request)
+
+    return JsonResponse({
+        "success": True,
+        "html_stats": html_stats,
+        "html_today_schedule": html_today_schedule,
+        "html_upcoming_table": html_upcoming_table,
+    })
+
+@login_required(login_url='auth') # Using new 'auth' login URL
+def update_booking_status(request, booking_id):
+    """
+    Allow barbers to update the status of a booking (confirm, cancel, complete).
+    """
+    if request.method != 'POST':
+        return redirect('barber_dashboard')
+
+    try:
+        # Ensure the logged-in user is a barber
+        barber = request.user.barber_profile
+    except Barber.DoesNotExist:
+        messages.error(request, "You are not authorized to perform this action.")
+        return redirect('auth') # Using new 'auth' login URL
+
+    booking = get_object_or_404(Reservation, id=booking_id)
+
+    # *** SECURITY CHECK ***
+    # Ensure the booking belongs to this barber
+    if booking.barber != barber:
+        messages.error(request, "You can only manage your own appointments.")
+        return redirect('barber_dashboard')
+
+    new_status = request.POST.get('status')
+    
+    # Define allowed transitions
+    allowed_statuses = ['confirmed', 'cancelled', 'completed', 'no_show']
+    
+    if new_status not in allowed_statuses:
+        messages.error(request, "Invalid status.")
+        return redirect('barber_dashboard')
+
+    # Update status
+    booking.status = new_status
+    
+    # Add a cancellation reason if the barber cancels
+    if new_status == 'cancelled':
+        booking.cancellation_reason = "Cancelled by barber."
+        booking.cancelled_at = timezone.now()
+        booking.cancelled_by = request.user
+        messages.success(request, f"Booking #{booking.id} has been cancelled.")
+        
+    elif new_status == 'confirmed':
+        messages.success(request, f"Booking #{booking.id} has been confirmed.")
+
+    elif new_status == 'completed':
+        messages.success(request, f"Booking #{booking.id} has been marked as completed.")
+        
+    elif new_status == 'no_show':
+        messages.success(request, f"Booking #{booking.id} has been marked as No Show.")
+
+    booking.save()
+    
+    return redirect('barber_dashboard')
+
+@login_required(login_url='auth') # Using new 'auth' login URL
+def barber_schedule_view(request):
+    """
+    Manages a barber's weekly schedule.
+    """
+    try:
+        barber = request.user.barber_profile
+    except Barber.DoesNotExist:
+        messages.error(request, "Barber profile not found.")
+        return redirect('auth') # Using new 'auth' login URL
+
+    if request.method == "POST":
+        action = request.POST.get('action')
+        
+        try:
+            if action == 'create':
+                date_str = request.POST.get('date')
+                start_time_str = request.POST.get('start_time')
+                end_time_str = request.POST.get('end_time')
+
+                if not all([date_str, start_time_str, end_time_str]):
+                    messages.error(request, "All fields are required.")
+                    return redirect('barber_schedule')
+
+                date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                start_time = datetime.strptime(start_time_str, '%H:%M').time()
+                end_time = datetime.strptime(end_time_str, '%H:%M').time()
+
+                if start_time >= end_time:
+                    messages.error(request, "End time must be after start time.")
+                    return redirect('barber_schedule')
+                
+                if date < timezone.now().date():
+                    messages.error(request, "Cannot create schedule for a past date.")
+                    return redirect('barber_schedule')
+
+                # Check for overlapping schedules
+                overlapping = Schedule.objects.filter(
+                    barber=barber,
+                    date=date,
+                    start_time__lt=end_time,
+                    end_time__gt=start_time
+                ).exists()
+
+                if overlapping:
+                    messages.error(request, f"A schedule already exists that overlaps with {start_time_str} - {end_time_str} on {date_str}.")
+                else:
+                    Schedule.objects.create(
+                        barber=barber,
+                        date=date,
+                        start_time=start_time,
+                        end_time=end_time,
+                        is_available=True
+                    )
+                    messages.success(request, f"Availability added for {date_str}.")
+            
+            elif action == 'delete':
+                schedule_id = request.POST.get('schedule_id')
+                schedule_to_delete = get_object_or_404(Schedule, id=schedule_id, barber=barber)
+                
+                # Check for bookings within this schedule
+                bookings_exist = Reservation.objects.filter(
+                    barber=barber,
+                    appointment_datetime__date=schedule_to_delete.date,
+                    appointment_datetime__time__gte=schedule_to_delete.start_time,
+                    appointment_datetime__time__lt=schedule_to_delete.end_time,
+                    status__in=['pending', 'confirmed']
+                ).exists()
+
+                if bookings_exist:
+                    messages.error(request, "Cannot delete schedule with active bookings. Please cancel or reschedule bookings first.")
+                else:
+                    schedule_to_delete.delete()
+                    messages.success(request, "Schedule slot deleted.")
+        
+        except Exception as e:
+            messages.error(request, f"An error occurred: {str(e)}")
+        
+        return redirect('barber_schedule')
+
+    # GET request: Display schedules
+    today = timezone.now().date()
+    schedules = Schedule.objects.filter(
+        barber=barber,
+        date__gte=today
+    ).order_by('date', 'start_time')
+
+    context = {
+        'barber': barber,
+        'schedules': schedules,
+        'today_str': today.strftime('%Y-%m-%d')
+    }
+    return render(request, "barber_schedule.html", context)
+
+
+@login_required(login_url='auth') # Using new 'auth' login URL
+def quick_actions_view(request):
+    """
+    Redirects from quick action buttons on barber_dashboard
+    """
+    if 'update-schedule' in request.POST:
+        return redirect('barber_schedule')
+        
+    messages.info(request, "Action not yet implemented.")
+    return redirect('barber_dashboard')
 
 
 # -------------------------------
@@ -492,7 +864,7 @@ def barber_dashboard(request):
 # -------------------------------
 def logout_view(request):
     logout(request)
-    return redirect("auth")
+    return redirect("auth") # Using new 'auth' login URL
 
 
 # -------------------------------
