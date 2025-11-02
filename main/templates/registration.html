@@ -1,0 +1,248 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration - Trimly</title>
+    <link rel="stylesheet" href="{% static 'base.css' %}">
+    <link rel="stylesheet" href="{% static 'registration.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js@1.12.0/src/toastify.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js@1.12.0/src/toastify.min.css">
+
+    <style>
+        input:invalid {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+        }
+        input:valid {
+            border-color: #28a745;
+            box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+        }
+
+        .password-requirements {
+            margin-top: 8px;
+            padding: 12px;
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .password-requirements li {
+            margin: 4px 0;
+            color: #6c757d;
+        }
+
+        /* Password box wrapper */
+        .password-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .password-wrapper input {
+            width: 100%;
+            padding-right: 40px; /* space for eye icon */
+            box-sizing: border-box;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #6c757d;
+        }
+
+        .toggle-password:hover {
+            color: #343a40;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <section id="navbar">
+        <nav class="navbar">
+            <div class="navbar-left">
+                <h1 class="logo">Trimly</h1>
+            </div>
+        </nav>
+    </section>
+
+    <!-- Registration Card -->
+    <section class="registration-container">
+        <div class="registration-card">
+            <h2 style="text-align:center; margin-bottom:18px;">Create an Account</h2>
+            <form action="/register/" method="POST">
+                {% csrf_token %}
+
+                <!-- Personal Information -->
+                <div class="form-group">
+                    <label for="first_name">First Name *</label>
+                    <input type="text" 
+                           id="first_name" 
+                           name="first_name" 
+                           required 
+                           maxlength="30"
+                           value="{{ prefill.first_name|default:'' }}"
+                           placeholder="Enter your first name">
+                </div>
+
+                <div class="form-group">
+                    <label for="last_name">Last Name *</label>
+                    <input type="text" 
+                           id="last_name" 
+                           name="last_name" 
+                           required 
+                           maxlength="30"
+                           value="{{ prefill.last_name|default:'' }}"
+                           placeholder="Enter your last name">
+                </div>
+
+                <!-- Contact Information -->
+                <div class="form-group">
+                    <label for="phone_number">Phone Number *</label>
+                    <input type="text" 
+                           id="phone_number" 
+                           name="phone_number" 
+                           required 
+                           maxlength="11"
+                           value="{{ prefill.phone_number|default:'' }}"
+                           placeholder="09xxxxxxxxx (11 digits)">
+                    <small style="color: #666; font-size: 13px; margin-top: 4px; display: block;">
+                        Must start with 09 and contain exactly 11 digits
+                    </small>
+                </div>
+
+                <!-- Account Information -->
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" 
+                           id="username" 
+                           name="username" 
+                           required 
+                           minlength="3"
+                           value="{{ prefill.username|default:'' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" 
+                           id="email" 
+                           name="email" 
+                           required 
+                           title="Please enter a valid email address"
+                           value="{{ prefill.email|default:'' }}">
+                </div>
+
+                <!-- Password field -->
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="password" name="password" required
+                            minlength="8"
+                            pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
+                            title="Password must be at least 8 characters and contain: 1 lowercase, 1 uppercase, 1 number, and 1 special character">
+                        <i class="fa-solid fa-eye toggle-password" id="togglePassword"></i>
+                    </div>
+
+                    <div class="password-requirements">
+                        <strong>Password must contain:</strong>
+                        <ul>
+                            <li>At least 8 characters</li>
+                            <li>At least 1 lowercase letter (a-z)</li>
+                            <li>At least 1 uppercase letter (A-Z)</li>
+                            <li>At least 1 number (0-9)</li>
+                            <li>At least 1 special character (!@#$%^&*)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Confirm Password -->
+                <div class="form-group">
+                    <label for="confirm-password">Confirm Password</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="confirm-password" name="confirm-password" required>
+                        <i class="fa-solid fa-eye toggle-password" id="toggleConfirmPassword"></i>
+                    </div>
+                </div>
+
+                <!-- Role Selection -->
+                <div class="form-group">
+                    <label><strong>Select Role</strong></label>
+                    <div class="role-selection">
+                        <label class="role-box">
+                            <input type="radio" name="role" value="customer" 
+                                   {% if prefill.role == 'customer' %}checked{% endif %}>
+                            <i class="fa-solid fa-user"></i>
+                            <p>Customer</p>
+                        </label>
+                        <label class="role-box">
+                            <input type="radio" name="role" value="barber"
+                                   {% if prefill.role == 'barber' %}checked{% endif %}>
+                            <i class="fa-solid fa-scissors"></i>
+                            <p>Barber</p>
+                        </label>
+                    </div>
+                </div>
+
+                <button type="submit" class="book-btn" style="margin-top:16px;">Register</button>
+            </form>
+
+            {% if messages %}
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const raw = document.getElementById('django-messages');
+                if (!raw) return;
+                const messages = JSON.parse(raw.textContent);
+                messages.forEach(message => {
+                    Toastify({
+                        text: message.text,
+                        duration: 3000,
+                        close: true,
+                        gravity: "top",
+                        position: "center",
+                        style: {
+                            background: message.tags === 'success' ? '#28a745'
+                                      : message.tags === 'error' ? '#dc3545'
+                                      : '#17a2b8',
+                        },
+                    }).showToast();
+                });
+            });
+            </script>
+            {% endif %}
+
+            <p style="text-align:center; margin-top:12px;">
+                Already have an account? <a href="/login/">Login</a>
+            </p>
+        </div>
+    </section>
+
+    <script>
+        // Toggle main password visibility
+        const togglePassword = document.getElementById("togglePassword");
+        const passwordInput = document.getElementById("password");
+
+        togglePassword.addEventListener("click", function() {
+            const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
+            passwordInput.setAttribute("type", type);
+            this.classList.toggle("fa-eye");
+            this.classList.toggle("fa-eye-slash");
+        });
+
+        // Toggle confirm password visibility
+        const toggleConfirm = document.getElementById("toggleConfirmPassword");
+        const confirmInput = document.getElementById("confirm-password");
+
+        toggleConfirm.addEventListener("click", function() {
+            const type = confirmInput.getAttribute("type") === "password" ? "text" : "password";
+            confirmInput.setAttribute("type", type);
+            this.classList.toggle("fa-eye");
+            this.classList.toggle("fa-eye-slash");
+        });
+    </script>
+</body>
+</html>

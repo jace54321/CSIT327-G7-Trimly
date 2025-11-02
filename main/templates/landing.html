@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trimly — Premium Barbershop</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'base.css' %}">
+  <link rel="stylesheet" href="{% static 'landing.css' %}">
+</head>
+<body>
+
+<!-- Navbar -->
+<header class="navbar navbar-clear" id="navbar" data-glass>
+  <div class="navbar-left">
+    <a href="{% url 'landing' %}" class="logo-link">
+      <div class="brand-mark">✂</div>
+      <h1 class="logo">TRIMLY</h1>
+    </a>
+  </div>
+
+  <div class="navbar-right">
+    <ul class="nav-list">
+      <li><a class="nav-link" href="#services">Services</a></li>
+    </ul>
+
+    {% if user.is_authenticated %}
+      <a
+        href="{% if user.barber %}{% url 'barber_dashboard' %}{% else %}{% url 'customer_dashboard' %}{% endif %}"
+        class="nav-link"
+      >Dashboard</a>
+
+      <form method="post" action="{% url 'customer_dashboard' %}" class="inline-form">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-glass">Book Now</button>
+      </form>
+    {% else %}
+      <a href="{% url 'auth' %}" class="btn btn-light">Get Started</a>
+      <a href="{% url 'auth' %}" class="btn btn-glass">Book Now</a>
+    {% endif %}
+  </div>
+</header>
+
+<!-- Hero -->
+<section class="hero hero-dark hero-left" id="hero" aria-labelledby="hero-title">
+  <div class="hero-overlay"></div>
+  <div class="hero-inner">
+    <p class="kicker">Premium Grooming Experience</p>
+    <h2 id="hero-title" class="hero-title-giant">TRIMLY</h2>
+    <p class="hero-sub hero-sub-wide">
+      Where style meets precision. Book an appointment and discover why we're the premier destination for discerning gentlemen.
+    </p>
+    <div class="hero-cta">
+      <a href="#services" class="btn btn-ghost">View Services</a>
+      {% if user.is_authenticated %}
+        <a href="{% if user.barber %}{% url 'barber_dashboard' %}{% else %}{% url 'customer_dashboard' %}{% endif %}" class="btn btn-glass">Book Appointment</a>
+      {% else %}
+        <a href="{% url 'auth' %}" class="btn btn-glass">Book Appointment</a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<!-- Services -->
+<section id="services" class="services-dark">
+  <div class="container">
+    <div class="services-head">
+      <h3 class="services-title">Our Services</h3>
+      <p class="services-sub">Choose from our expertly crafted services designed to elevate your style</p>
+    </div>
+
+    <div class="services-grid">
+      <article class="svc-card svc-glass" tabindex="0">
+        <div class="svc-icon-tile"><span class="svc-icon">✂</span></div>
+        <h4 class="svc-name">Classic Cut</h4>
+        <p class="svc-desc">Traditional precision haircut tailored to your style and face shape.</p>
+        <div class="svc-price">$45</div>
+      </article>
+
+      <article class="svc-card svc-glass" tabindex="0">
+        <div class="svc-icon-tile"><span class="svc-icon">✨</span></div>
+        <h4 class="svc-name">Premium Styling</h4>
+        <p class="svc-desc">Complete styling service with premium products and hot towel treatment.</p>
+        <div class="svc-price">$65</div>
+      </article>
+
+      <article class="svc-card svc-glass" tabindex="0">
+        <div class="svc-icon-tile"><span class="svc-icon">🪒</span></div>
+        <h4 class="svc-name">Beard Grooming</h4>
+        <p class="svc-desc">Expert beard trim, shaping, and conditioning for the perfect look.</p>
+        <div class="svc-price">$35</div>
+      </article>
+
+      <article class="svc-card svc-glass" tabindex="0">
+        <div class="svc-icon-tile"><span class="svc-icon">👤</span></div>
+        <h4 class="svc-name">The Complete</h4>
+        <p class="svc-desc">Full service package including cut, style, beard, and facial treatment.</p>
+        <div class="svc-price">$95</div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer" id="contact">
+  <small>© {{ now|date:"Y" }} Trimly. All rights reserved.</small>
+</footer>
+
+<!-- Scroll to Top Button -->
+<button id="scrollToTopBtn" class="scrolltop" aria-label="Scroll to top" title="Go to top">↑</button>
+
+<script>
+  // Clear -> Glass navbar after hero
+  const navbar = document.querySelector('[data-glass]');
+  const hero = document.getElementById('hero');
+  const obs = new IntersectionObserver(([e]) => {
+    navbar.classList.toggle('navbar-glass', !e.isIntersecting);
+  }, { rootMargin: "-64px 0px 0px 0px", threshold: 0.01 });
+  obs.observe(hero);
+
+  // Scroll-to-top
+  const scrollBtn = document.getElementById('scrollToTopBtn');
+  const showAt = 250;
+  const onScroll = () => {
+    if (window.scrollY > showAt) scrollBtn.classList.add('scrolltop--show');
+    else scrollBtn.classList.remove('scrolltop--show');
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+  scrollBtn.addEventListener('click', scrollToTop);
+  scrollBtn.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); scrollToTop(); }
+  });
+  onScroll();
+</script>
+
+</body>
+</html>

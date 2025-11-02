@@ -1,0 +1,50 @@
+{% load static %}
+<h3>Today's Schedule</h3>{% if today_appointments %}
+  <ul class="schedule-list">
+    {% for appt in today_appointments %}
+      <li class="schedule-item schedule-{{ appt.status }}">
+        <span class="time">{{ appt.appointment_datetime|time:"g:i A" }}</span>
+        <span class="service">{{ appt.service_type.name }}</span>
+        <span class="customer">w/ {{ appt.customer.get_full_name }}</span>
+        
+        <div class="status-actions">
+          {% if appt.status == 'pending' %}
+            <form method="POST" action="{% url 'update_booking_status' appt.id %}" class="action-form">
+              {% csrf_token %}
+              <input type="hidden" name="status" value="confirmed">
+              <button type="submit" class="btn-action btn-confirm">Accept</button>
+            </form>
+            <form method="POST" action="{% url 'update_booking_status' appt.id %}" class="action-form">
+              {% csrf_token %}
+              <input type="hidden" name="status" value="cancelled">
+              <button type="submit" class="btn-action btn-reject">Reject</button>
+            </form>
+          
+          {% elif appt.status == 'confirmed' %}
+            <form method="POST" action="{% url 'update_booking_status' appt.id %}" class="action-form">
+              {% csrf_token %}
+              <input type="hidden" name="status" value="completed">
+              <button type="submit" class="btn-action btn-complete">Complete</button>
+            </form>
+            <form method="POST" action="{% url 'update_booking_status' appt.id %}" class="action-form">
+              {% csrf_token %}
+              <input type="hidden" name="status" value="no_show">
+              <button type="submit" class="btn-action btn-reject">No Show</button>
+            </form>
+
+          {% elif appt.status == 'completed' or appt.status == 'cancelled' or appt.status == 'no_show' %}
+             <span class="status-text-static">{{ appt.get_status_display }}</span>
+          
+          {% else %}
+            <span class="status-text-static">{{ appt.get_status_display }}</span>
+          {% endif %}
+        </div>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <div class="empty">
+    <i>📅</i>
+    <p>No appointments scheduled for today</p>
+  </div>
+{% endif %}

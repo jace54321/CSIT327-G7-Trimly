@@ -1,0 +1,149 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trimly - Barber Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'barber_dashboard.css' %}">
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="nav-left">
+      <h1 class="logo">Trimly</h1>
+    </div>
+    <ul class="nav-links">
+      <li><a href="{% url 'barber_dashboard' %}">Dashboard</a></li>
+      <li><a href="{% url 'barber_schedule' %}">Schedule</a></li>
+    </ul>
+    <div class="nav-right">
+      <span>Welcome, {{ request.user.username }}</span>
+     <a href="{% url 'logout' %}" class="logout-btn">Logout</a>
+    </div>
+  </nav>
+
+  <!-- Main Dashboard -->
+  <section class="dashboard">
+    <div class="dashboard-header">
+      <div>
+        <h2>Barber Dashboard</h2>
+        <p>Welcome back, {{ request.user.username }}! Here's your schedule overview.</p>
+      </div>
+
+      <!-- Availability Toggle -->
+      <div class="availability-toggle">
+        <label class="toggle-label" for="availability-switch">Available for bookings</label>
+        <label class="switch">
+          <input type="checkbox" id="availability-switch" {% if barber.is_available_for_booking %}checked{% endif %}>
+          <span class="slider round"></span>
+        </label>
+        <span id="availability-status" class="status-text">
+          {% if barber.is_available_for_booking %}Available{% else %}Unavailable{% endif %}
+        </span>
+      </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats" id="stats-wrapper">
+      {% include "_barber_stats.html" %}
+    </div>
+
+    <!-- Middle Section -->
+    <div class="schedule-section">
+      <div class="schedule" id="today-schedule-wrapper">
+        {% include "_barber_today_schedule.html" %}
+      </div>
+    
+      <div class="quick-actions">
+        </div>
+    </div>
+
+    <!-- Upcoming Appointments -->
+    <div class="upcoming">
+      <h3>Upcoming Appointments</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>Service</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="upcoming-table-wrapper">
+          {% include "_barber_upcoming_table.html" %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <script>
+    // This script block should be at the bottom of barber_dashboard.html
+    
+    document.addEventListener('DOMContentLoaded', function () {
+      
+      // --- Availability Toggle Logic (from your original file) ---
+      const toggle = document.getElementById('availability-switch');
+      const status = document.getElementById('availability-status');
+
+      toggle.addEventListener('change', function () {
+        const available = toggle.checked;
+        status.textContent = available ? 'Available' : 'Unavailable';
+        status.style.color = available ? '#4CAF50' : '#f44336';
+
+        fetch("{% url 'toggle_availability' %}", {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ available: available }),
+        });
+      });
+
+      // --- NEW: Polling function ---
+      const statsWrapper = document.getElementById('stats-wrapper');
+      const todayScheduleWrapper = document.getElementById('today-schedule-wrapper');
+      const upcomingTableWrapper = document.getElementById('upcoming-table-wrapper');
+      const apiUrl = "{% url 'barber_dashboard_api' %}";
+
+      async function fetchDashboardData() {
+        try {
+          const response = await fetch(apiUrl);
+          if (!response.ok) {
+            console.error('Failed to fetch dashboard data');
+            return;
+          }
+          
+          const data = await response.json();
+
+          if (data.success) {
+            // Check if the content has actually changed before updating
+            // This prevents the screen from "blinking" if there are no new updates
+            if (statsWrapper.innerHTML.trim() !== data.html_stats.trim()) {
+              statsWrapper.innerHTML = data.html_stats;
+            }
+            if (todayScheduleWrapper.innerHTML.trim() !== data.html_today_schedule.trim()) {
+              todayScheduleWrapper.innerHTML = data.html_today_schedule;
+            }
+            if (upcomingTableWrapper.innerHTML.trim() !== data.html_upcoming_table.trim()) {
+              upcomingTableWrapper.innerHTML = data.html_upcoming_table;
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching dashboard data:', error);
+        }
+      }
+
+      // Poll every 10 seconds (10000 milliseconds)
+      setInterval(fetchDashboardData, 10000);
+      
+    });
+  </script>
+</body>
+</html>
