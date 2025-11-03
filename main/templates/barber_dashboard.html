@@ -6,22 +6,46 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Trimly - Barber Dashboard</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Base CSS (Global Styles) -->
+  <link rel="stylesheet" href="{% static 'base.css' %}">
+  
+  <!-- Page-specific CSS -->
   <link rel="stylesheet" href="{% static 'barber_dashboard.css' %}">
 </head>
 <body>
-  <!-- Navbar -->
-  <nav class="navbar">
-    <div class="nav-left">
-      <h1 class="logo">Trimly</h1>
+  <!-- Navbar with Glassmorphism (using base.css styles) -->
+  <nav class="navbar navbar-glass">
+    <div class="navbar-left">
+      <a href="{% url 'barber_dashboard' %}" class="logo-link">
+        <div class="brand-mark">
+          <i class="fas fa-scissors"></i>
+        </div>
+        <h1 class="logo">Trimly</h1>
+      </a>
     </div>
-    <ul class="nav-links">
-      <li><a href="{% url 'barber_dashboard' %}">Dashboard</a></li>
-      <li><a href="{% url 'barber_schedule' %}">Schedule</a></li>
-    </ul>
-    <div class="nav-right">
-      <span>Welcome, {{ request.user.username }}</span>
-     <a href="{% url 'logout' %}" class="logout-btn">Logout</a>
+    
+    <div class="navbar-right">
+      <ul class="nav-list">
+        <li><a href="{% url 'barber_dashboard' %}" class="nav-link">Dashboard</a></li>
+        <li><a href="{% url 'barber_schedule' %}" class="nav-link">Schedule</a></li>
+      </ul>
+      
+      <div class="user-greeting">
+        <i class="fas fa-user-circle"></i>
+        <span>{{ request.user.username }}</span>
+      </div>
+      
+      <a href="{% url 'logout' %}" class="btn btn-ghost">
+        <i class="fas fa-sign-out-alt"></i>
+        Logout
+      </a>
     </div>
   </nav>
 
@@ -38,9 +62,9 @@
         <label class="toggle-label" for="availability-switch">Available for bookings</label>
         <label class="switch">
           <input type="checkbox" id="availability-switch" {% if barber.is_available_for_booking %}checked{% endif %}>
-          <span class="slider round"></span>
+          <span class="slider"></span>
         </label>
-        <span id="availability-status" class="status-text">
+        <span id="availability-status" class="status-text {% if barber.is_available_for_booking %}available{% endif %}">
           {% if barber.is_available_for_booking %}Available{% else %}Unavailable{% endif %}
         </span>
       </div>
@@ -58,43 +82,61 @@
       </div>
     
       <div class="quick-actions">
-        </div>
+        <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+        <button onclick="window.location.href='{% url 'barber_schedule' %}'">
+          <i class="fas fa-calendar-alt"></i>
+          View Full Schedule
+        </button>
+        <button onclick="refreshDashboard()">
+          <i class="fas fa-sync-alt"></i>
+          Refresh Dashboard
+        </button>
+      </div>
     </div>
 
     <!-- Upcoming Appointments -->
     <div class="upcoming">
-      <h3>Upcoming Appointments</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Customer</th>
-            <th>Service</th>
-            <th>Date</th>
-            <th>Time</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="upcoming-table-wrapper">
-          {% include "_barber_upcoming_table.html" %}
-        </tbody>
-      </table>
+      <h3><i class="fas fa-clock"></i> Upcoming Appointments</h3>
+      {% if upcoming_appointments %}
+        <table>
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>Service</th>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="upcoming-table-wrapper">
+            {% include "_barber_upcoming_table.html" %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="empty">
+          <i class="fas fa-calendar-check"></i>
+          <p>No upcoming appointments</p>
+        </div>
+      {% endif %}
     </div>
   </section>
 
   <script>
-    // This script block should be at the bottom of barber_dashboard.html
-    
+    // Availability Toggle Logic
     document.addEventListener('DOMContentLoaded', function () {
-      
-      // --- Availability Toggle Logic (from your original file) ---
       const toggle = document.getElementById('availability-switch');
       const status = document.getElementById('availability-status');
 
       toggle.addEventListener('change', function () {
         const available = toggle.checked;
         status.textContent = available ? 'Available' : 'Unavailable';
-        status.style.color = available ? '#4CAF50' : '#f44336';
+        
+        if (available) {
+          status.classList.add('available');
+        } else {
+          status.classList.remove('available');
+        }
 
         fetch("{% url 'toggle_availability' %}", {
           method: 'POST',
@@ -103,10 +145,19 @@
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ available: available }),
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (!data.success) {
+            console.error('Failed to update availability');
+          }
+        })
+        .catch(error => {
+          console.error('Error updating availability:', error);
         });
       });
 
-      // --- NEW: Polling function ---
+      // Polling function for real-time updates
       const statsWrapper = document.getElementById('stats-wrapper');
       const todayScheduleWrapper = document.getElementById('today-schedule-wrapper');
       const upcomingTableWrapper = document.getElementById('upcoming-table-wrapper');
@@ -123,15 +174,17 @@
           const data = await response.json();
 
           if (data.success) {
-            // Check if the content has actually changed before updating
-            // This prevents the screen from "blinking" if there are no new updates
-            if (statsWrapper.innerHTML.trim() !== data.html_stats.trim()) {
+            // Only update if content has changed (prevents flickering)
+            if (statsWrapper && data.html_stats && 
+                statsWrapper.innerHTML.trim() !== data.html_stats.trim()) {
               statsWrapper.innerHTML = data.html_stats;
             }
-            if (todayScheduleWrapper.innerHTML.trim() !== data.html_today_schedule.trim()) {
+            if (todayScheduleWrapper && data.html_today_schedule && 
+                todayScheduleWrapper.innerHTML.trim() !== data.html_today_schedule.trim()) {
               todayScheduleWrapper.innerHTML = data.html_today_schedule;
             }
-            if (upcomingTableWrapper.innerHTML.trim() !== data.html_upcoming_table.trim()) {
+            if (upcomingTableWrapper && data.html_upcoming_table && 
+                upcomingTableWrapper.innerHTML.trim() !== data.html_upcoming_table.trim()) {
               upcomingTableWrapper.innerHTML = data.html_upcoming_table;
             }
           }
@@ -140,10 +193,14 @@
         }
       }
 
-      // Poll every 10 seconds (10000 milliseconds)
+      // Poll every 10 seconds
       setInterval(fetchDashboardData, 10000);
-      
     });
+
+    // Helper function to manually refresh
+    function refreshDashboard() {
+      location.reload();
+    }
   </script>
 </body>
 </html>

@@ -1,111 +1,100 @@
+/* ============================================================================
+   BARBER DASHBOARD - Glassmorphism Design (Aligned with Customer Dashboard)
+   ============================================================================ */
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: 'Poppins', sans-serif;
 }
 
 body {
-  background: linear-gradient(to bottom, #1c1c1c, #2a2a2a);
-  color: #f5f5f5;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--text-on-dark);
+  background: linear-gradient(180deg, #0a0a0c 0%, #0d1117 50%, #0a0a0c 100%);
   min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Navbar */
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #1a1410;
-  padding: 1rem 3rem;
-}
-
-.logo {
-  font-weight: 700;
-  color: #fff;
-}
-
-.nav-links {
-  list-style: none;
-  display: flex;
-  gap: 2rem;
-}
-
-.nav-links a {
-  color: #ddd;
-  text-decoration: none;
-  font-weight: 500;
-  transition: color 0.3s;
-}
-
-.nav-links a:hover {
-  color: #f4c542;
-}
-
-.nav-right {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.logout-btn {
-  background: none;
-  border: 1px solid #f4c542;
-  color: #f4c542;
-  padding: 5px 15px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: 0.3s;
-}
-
-.logout-btn:hover {
-  background: #f4c542;
-  color: #1a1410;
-}
-
-/* Dashboard */
+/* ==================== DASHBOARD CONTAINER ==================== */
 .dashboard {
-  padding: 2rem 3rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 40px 24px;
 }
 
-.dashboard h2 {
-  font-size: 2rem;
-  font-weight: 700;
-}
-
-.dashboard p {
-  color: #c9c9c9;
-  margin-bottom: 2rem;
-}
-
-/* Availability Toggle */
+/* ==================== DASHBOARD HEADER ==================== */
 .dashboard-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  margin-bottom: 48px;
+  gap: 32px;
 }
 
+.dashboard h2 {
+  font-family: "Playfair Display", serif;
+  font-weight: 900;
+  font-size: 36px;
+  margin: 0 0 8px;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.dashboard p {
+  font-size: 15px;
+  color: #a8b0bc;
+  margin: 0;
+  font-weight: 400;
+}
+
+/* ==================== AVAILABILITY TOGGLE ==================== */
 .availability-toggle {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
+  background: rgba(30, 30, 36, 0.55);
+  border: 1.2px solid rgba(255, 255, 255, 0.14);
+  padding: 14px 20px;
+  border-radius: 14px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.availability-toggle:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(35, 35, 42, 0.65);
 }
 
 .toggle-label {
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 14px;
+  color: #a8b0bc;
 }
 
 .status-text {
-  font-weight: 600;
-  color: #f44336;
+  font-weight: 700;
+  font-size: 14px;
+  color: #ef4444;
+  transition: color 0.3s ease;
 }
 
-/* Switch Button Style */
+.status-text.available {
+  color: #22c55e;
+}
+
+/* Switch Button (Enhanced) */
 .switch {
   position: relative;
   display: inline-block;
   width: 50px;
-  height: 24px;
+  height: 26px;
 }
 
 .switch input {
@@ -121,9 +110,11 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #555;
-  transition: .4s;
+  background: rgba(239, 68, 68, 0.25);
+  border: 1.2px solid rgba(239, 68, 68, 0.35);
+  transition: all 0.4s cubic-bezier(0.34, 0.1, 0.64, 1);
   border-radius: 24px;
+  backdrop-filter: blur(8px);
 }
 
 .slider:before {
@@ -133,217 +124,404 @@ body {
   width: 18px;
   left: 3px;
   bottom: 3px;
-  background-color: white;
-  transition: .4s;
+  background: #ffffff;
+  transition: all 0.4s cubic-bezier(0.34, 0.1, 0.64, 1);
   border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 input:checked + .slider {
-  background-color: #4CAF50;
+  background: rgba(34, 197, 94, 0.25);
+  border-color: rgba(34, 197, 94, 0.45);
 }
 
 input:checked + .slider:before {
-  transform: translateX(26px);
+  transform: translateX(24px);
 }
 
-/* Stats Cards */
+/* ==================== STATS CARDS ==================== */
 .stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
-  margin-top: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+  margin-top: 32px;
+  margin-bottom: 48px;
 }
 
 .card {
-  background: #1a1410;
-  padding: 1.5rem;
+  background: rgba(30, 30, 36, 0.55);
+  border: 1.2px solid rgba(255, 255, 255, 0.14);
+  padding: 24px;
   border-radius: 16px;
-  text-align: left;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s cubic-bezier(0.34, 0.1, 0.64, 1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.card:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(35, 35, 42, 0.65);
+  transform: translateY(-4px);
+}
+
+.card p {
+  font-size: 12px;
+  color: #8a92a8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+  margin-bottom: 10px;
 }
 
 .card h3 {
-  font-size: 1.8rem;
-  margin: 0.5rem 0;
+  font-size: 32px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.02em;
+  line-height: 1;
 }
 
-/* Schedule Section */
+/* ==================== SCHEDULE SECTION ==================== */
 .schedule-section {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 24px;
+  margin-top: 32px;
+}
+
+.schedule,
+.quick-actions {
+  background: rgba(18, 18, 22, 0.65);
+  border: 1.2px solid rgba(255, 255, 255, 0.14);
+  border-radius: 20px;
+  padding: 32px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 24px 56px rgba(0, 0, 0, 0.4);
+}
+
+.schedule h3,
+.quick-actions h3 {
+  font-size: 22px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 24px;
+  letter-spacing: -0.01em;
   display: flex;
-  gap: 1.5rem;
-  margin-top: 2rem;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
 }
 
-.schedule, .quick-actions {
-  background: #1a1410;
-  border-radius: 16px;
+.schedule h3 i,
+.quick-actions h3 i {
+  color: var(--accent);
+  font-size: 20px;
+}
+
+/* Schedule List */
+.schedule-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.schedule-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: rgba(30, 30, 36, 0.55);
+  border: 1.2px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  gap: 12px;
+  backdrop-filter: blur(16px);
+}
+
+.schedule-item:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(35, 35, 42, 0.65);
+}
+
+.schedule-item .time {
+  font-weight: 700;
+  font-size: 14px;
+  color: #ffffff;
+  min-width: 80px;
+}
+
+.schedule-item .service {
+  font-weight: 600;
+  font-size: 14px;
+  color: #ffffff;
   flex: 1;
-  padding: 1.5rem;
-  min-width: 300px;
+  min-width: 0;
 }
 
-.schedule .empty {
-  text-align: center;
-  color: #aaa;
-  margin-top: 3rem;
+.schedule-item .customer {
+  font-size: 13px;
+  color: #8a92a8;
+  flex: 1;
+  min-width: 0;
 }
 
-/* Quick Actions Buttons */
-.quick-actions button {
-  display: block;
-  width: 100%;
-  background: #2a221d;
-  color: #f5f5f5;
-  border: none;
-  padding: 12px;
+/* Status Actions */
+.status-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.status-text-static {
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: capitalize;
+  padding: 6px 12px;
   border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #8a92a8;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Status Badges */
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid;
+}
+
+.status-pending,
+.schedule-pending .status {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.35);
+}
+
+.status-confirmed,
+.schedule-confirmed .status {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.status-in_progress,
+.schedule-in_progress .status {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border-color: rgba(59, 130, 246, 0.35);
+}
+
+.status-completed {
+  background: rgba(139, 92, 246, 0.15);
+  color: #a78bfa;
+  border-color: rgba(139, 92, 246, 0.35);
+}
+
+.status-cancelled {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+/* Action Buttons */
+.btn-action {
+  padding: 8px 14px;
+  border: 1.2px solid;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-confirm {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.btn-confirm:hover {
+  background: rgba(34, 197, 94, 0.25);
+  border-color: rgba(34, 197, 94, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-reject {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.btn-reject:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-complete {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border-color: rgba(59, 130, 246, 0.35);
+}
+
+.btn-complete:hover {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.5);
+  transform: translateY(-1px);
+}
+
+/* ==================== QUICK ACTIONS ==================== */
+.quick-actions button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1.2px solid rgba(255, 255, 255, 0.14);
+  color: #c9c3ba;
+  padding: 14px 18px;
+  border-radius: 10px;
   margin: 10px 0;
   cursor: pointer;
-  font-weight: 500;
-  transition: background 0.3s;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
 }
 
 .quick-actions button:hover {
-  background: #f4c542;
-  color: #1a1410;
+  background: var(--accent);
+  color: #1b120a;
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(243, 211, 124, 0.3);
 }
 
-/* Remove constant yellow — only on hover */
-.quick-actions .settings {
-  background: #2a221d;
-  color: #f5f5f5;
+.quick-actions button i {
+  font-size: 16px;
 }
 
-/* Upcoming Appointments */
+/* ==================== UPCOMING APPOINTMENTS ==================== */
 .upcoming {
-  background: #1a1410;
-  border-radius: 16px;
-  padding: 1.5rem;
-  margin-top: 2rem;
+  background: rgba(18, 18, 22, 0.65);
+  border: 1.2px solid rgba(255, 255, 255, 0.14);
+  border-radius: 20px;
+  padding: 32px;
+  margin-top: 32px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 24px 56px rgba(0, 0, 0, 0.4);
+}
+
+.upcoming h3 {
+  font-size: 22px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 24px;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.upcoming h3 i {
+  color: var(--accent);
+  font-size: 20px;
 }
 
 .upcoming table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 1rem;
+  margin-top: 16px;
 }
 
-.upcoming th, .upcoming td {
+.upcoming th,
+.upcoming td {
   text-align: left;
-  padding: 10px;
+  padding: 14px 12px;
+  font-size: 14px;
 }
 
 .upcoming thead {
-  border-bottom: 1px solid #2f2f2f;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.upcoming th {
+  font-weight: 700;
+  font-size: 12px;
+  color: #8a92a8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.upcoming td {
+  color: #a8b0bc;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.upcoming tbody tr:hover {
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .no-appointments {
   text-align: center;
-  color: #a5a5a5;
-  padding: 20px;
+  color: #8a92a8;
+  padding: 60px 20px;
+  font-size: 15px;
 }
 
-/* Add this to your barber_dashboard.css */
-.status-badge {
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: capitalize;
-}
-.status-pending { background-color: #ffc107; color: #333; }
-.status-confirmed { background-color: #28a745; color: white; }
-.status-in_progress { background-color: #17a2b8; color: white; }
-.status-completed { background-color: #6c757d; color: white; }
-.status-cancelled { background-color: #dc3545; color: white; }
-
-.schedule-list {
-  list-style: none;
-  padding: 0;
-  margin-top: 1rem;
-}
-.schedule-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 10px;
-  border-bottom: 1px solid #eee;
-}
-.schedule-item .time { font-weight: 700; width: 20%; }
-.schedule-item .service { font-weight: 600; width: 30%; }
-.schedule-item .customer { width: 30%; color: #555; }
-.schedule-item .status { 
-  font-weight: 600; 
-  width: 20%; 
-  text-align: right; 
-}
-.schedule-pending .status { color: #ffc107; }
-.schedule-confirmed .status { color: #28a745; }
-.schedule-in_progress .status { color: #17a2b8; }
-
-/* Add this to barber_dashboard.css for the new action buttons */
-
-.schedule-item .status-actions {
-  width: 25%;
-  text-align: right;
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-.schedule-item .status-text-static {
-  font-weight: 600;
-  text-transform: capitalize;
-  color: #6c757d;
+.empty {
+  text-align: center;
+  color: #8a92a8;
+  padding: 60px 20px;
+  font-size: 15px;
 }
 
-.action-form {
-  display: inline-block;
-  margin: 0;
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 1024px) {
+  .schedule-section {
+    grid-template-columns: 1fr;
+  }
+  
+  .quick-actions {
+    order: -1;
+  }
 }
 
-.btn-action {
-  padding: 4px 10px;
-  border: none;
-  border-radius: 5px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
+@media (max-width: 768px) {
+  .dashboard-header {
+    flex-direction: column;
+    gap: 24px;
+  }
+  
+  .stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .schedule-item {
+    flex-wrap: wrap;
+  }
+  
+  .schedule-item .time,
+  .schedule-item .service,
+  .schedule-item .customer {
+    width: 100%;
+  }
+  
+  .status-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
 }
-
-.btn-confirm {
-  background-color: #28a745;
-  color: white;
-}
-.btn-confirm:hover {
-  background-color: #218838;
-}
-
-.btn-reject {
-  background-color: #dc3545;
-  color: white;
-}
-.btn-reject:hover {
-  background-color: #c82333;
-}
-
-.btn-complete {
-  background-color: #007bff;
-  color: white;
-}
-.btn-complete:hover {
-  background-color: #0069d9;
-}
-
-.actions-cell {
-  display: flex;
-  gap: 5px;
-  align-items: center;
-}
-
-/* Adjust schedule item widths to make space for buttons */
-.schedule-item .time { width: 15%; }
-.schedule-item .service { width: 25%; }
-.schedule-item .customer { width: 25%; }
-.schedule-item .status-actions { width: 35%; }
