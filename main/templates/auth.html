@@ -59,14 +59,20 @@
                 <p>Sign in to your account</p>
 
                 <div class="form-group">
-                    <label for="login-email">Email Address</label>
+                    <label for="login-email">Email or Username</label>
                     <input 
-                        type="email" 
+                        type="text" 
                         id="login-email" 
                         name="email" 
                         placeholder="Enter your email"
                         required
                         autocomplete="email"
+
+                        id="login-username"
+                        name="username"
+                        placeholder="Enter your username"
+                        required
+                        autocomplete="username"
                     >
                 </div>
 
@@ -342,6 +348,14 @@
             });
         }
 
+        // Check Email or Username field placeholder
+        const loginEmailInput = document.getElementById('login-email');
+            if (loginEmailInput) {
+                loginEmailInput.setAttribute('placeholder', 'Enter your email or username');
+            }else{
+                loginUsernameInput.setAttribute('placeholder', 'Enter your email or username');
+            }
+        
         // Check if we should show register form based on URL or context
         window.addEventListener('DOMContentLoaded', function() {
             const urlParams = new URLSearchParams(window.location.search);
