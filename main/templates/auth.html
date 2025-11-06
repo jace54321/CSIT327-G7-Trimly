@@ -51,7 +51,7 @@
                 {% endfor %}
             {% endif %}
 
-            <!-- Login Form -->
+            <!-- Login Form (requires reviewing if implementation of email/username is correct) -->
             <form id="loginForm" method="POST" action="{% url 'login' %}" class="auth-form {% if not show_register %}active{% endif %}">
                 {% csrf_token %}
                 
@@ -59,14 +59,14 @@
                 <p>Sign in to your account</p>
 
                 <div class="form-group">
-                    <label for="login-email">Email Address</label>
+                    <label for="login-identifier">Email or Username</label>
                     <input 
-                        type="email" 
-                        id="login-email" 
-                        name="email" 
-                        placeholder="Enter your email"
+                        type="text" 
+                        id="login-identifier" 
+                        name="username" 
+                        placeholder="Enter your email or username"
                         required
-                        autocomplete="email"
+                        autocomplete="username"
                     >
                 </div>
 
@@ -342,6 +342,13 @@
             });
         }
 
+        // Correct: use the variable name (loginIdentifier), not the ID string
+        const loginIdentifier = document.getElementById('login-identifier');
+        if (loginIdentifier) {
+            loginIdentifier.setAttribute('placeholder', 'Enter your email or username');
+        }
+
+        
         // Check if we should show register form based on URL or context
         window.addEventListener('DOMContentLoaded', function() {
             const urlParams = new URLSearchParams(window.location.search);
