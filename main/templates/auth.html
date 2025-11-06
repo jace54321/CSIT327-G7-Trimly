@@ -51,7 +51,7 @@
                 {% endfor %}
             {% endif %}
 
-            <!-- Login Form -->
+            <!-- Login Form (requires reviewing if implementation of email/username is correct) -->
             <form id="loginForm" method="POST" action="{% url 'login' %}" class="auth-form {% if not show_register %}active{% endif %}">
                 {% csrf_token %}
                 
@@ -59,18 +59,12 @@
                 <p>Sign in to your account</p>
 
                 <div class="form-group">
-                    <label for="login-email">Email or Username</label>
+                    <label for="login-identifier">Email or Username</label>
                     <input 
                         type="text" 
-                        id="login-email" 
-                        name="email" 
-                        placeholder="Enter your email"
-                        required
-                        autocomplete="email"
-
-                        id="login-username"
-                        name="username"
-                        placeholder="Enter your username"
+                        id="login-identifier" 
+                        name="username" 
+                        placeholder="Enter your email or username"
                         required
                         autocomplete="username"
                     >
@@ -348,13 +342,12 @@
             });
         }
 
-        // Check Email or Username field placeholder
-        const loginEmailInput = document.getElementById('login-email');
-            if (loginEmailInput) {
-                loginEmailInput.setAttribute('placeholder', 'Enter your email or username');
-            }else{
-                loginUsernameInput.setAttribute('placeholder', 'Enter your email or username');
-            }
+        // Correct: use the variable name (loginIdentifier), not the ID string
+        const loginIdentifier = document.getElementById('login-identifier');
+        if (loginIdentifier) {
+            loginIdentifier.setAttribute('placeholder', 'Enter your email or username');
+        }
+
         
         // Check if we should show register form based on URL or context
         window.addEventListener('DOMContentLoaded', function() {

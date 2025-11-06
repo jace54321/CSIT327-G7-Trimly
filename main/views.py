@@ -162,29 +162,21 @@ def registration_view(request):
 
 
 # -------------------------------
-# Handles user login
+# Handles user login (Account Enumeration Fix)
 # -------------------------------
 def login_view(request):
     if request.method == "POST":
-        email_or_username = request.POST.get("email")
-        password = request.POST.get("password")
+        email_or_username = request.POST.get("username", "").strip()
+        password = request.POST.get("password", "").strip()
         
-        user_exists = False
-        try:
-            user_obj = User.objects.get(email=email_or_username)
-            username = user_obj.username
-            user_exists = True
-        except User.DoesNotExist:
-            if User.objects.filter(username=email_or_username).exists():
-                user_exists = True
-                username = email_or_username
-            else:
-                username = None
-        
-        if not user_exists:
-            messages.error(request, 'User not found. Please check your email or username.')
-            return redirect('auth')
-        
+        username = email_or_username
+        if "@" in email_or_username:
+            try:
+                user_obj = User.objects.get(email=email_or_username)
+                username = user_obj.username
+            except User.DoesNotExist:
+                pass
+
         user = authenticate(request, username=username, password=password)
         
         if user is not None:
@@ -196,7 +188,7 @@ def login_view(request):
             else:
                 return redirect("landing")
         
-        messages.error(request, 'Invalid password. Please try again.')
+        messages.error(request, 'Invalid Credentials. Please try again.')
         return redirect('auth')
     
     # GET request - redirect to auth page
