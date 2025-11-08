@@ -70,33 +70,16 @@
     </div>
 
     <div class="services-grid">
-      <article class="svc-card svc-glass" tabindex="0">
-        <div class="svc-icon-tile"><span class="svc-icon">✂</span></div>
-        <h4 class="svc-name">Classic Cut</h4>
-        <p class="svc-desc">Traditional precision haircut tailored to your style and face shape.</p>
-        <div class="svc-price">$45</div>
-      </article>
-
-      <article class="svc-card svc-glass" tabindex="0">
-        <div class="svc-icon-tile"><span class="svc-icon">✨</span></div>
-        <h4 class="svc-name">Premium Styling</h4>
-        <p class="svc-desc">Complete styling service with premium products and hot towel treatment.</p>
-        <div class="svc-price">$65</div>
-      </article>
-
-      <article class="svc-card svc-glass" tabindex="0">
-        <div class="svc-icon-tile"><span class="svc-icon">🪒</span></div>
-        <h4 class="svc-name">Beard Grooming</h4>
-        <p class="svc-desc">Expert beard trim, shaping, and conditioning for the perfect look.</p>
-        <div class="svc-price">$35</div>
-      </article>
-
-      <article class="svc-card svc-glass" tabindex="0">
-        <div class="svc-icon-tile"><span class="svc-icon">👤</span></div>
-        <h4 class="svc-name">The Complete</h4>
-        <p class="svc-desc">Full service package including cut, style, beard, and facial treatment.</p>
-        <div class="svc-price">$95</div>
-      </article>
+      {% for service in services %}
+        <article class="svc-card svc-glass" tabindex="0">
+          <div class="svc-icon-tile"><span class="svc-icon">✂</span></div>
+          <h4 class="svc-name">{{ service.name }}</h4>
+          <p class="svc-desc">{{ service.description|default:"Premium grooming service" }}</p>
+          <div class="svc-price">₱{{ service.price|floatformat:0 }}</div>
+        </article>
+      {% empty %}
+        <p>No services available at the moment.</p>
+      {% endfor %}
     </div>
   </div>
 </section>

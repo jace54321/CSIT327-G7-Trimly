@@ -27,7 +27,8 @@ def landing_view(request):
     """
     Renders the landing page.
     """
-    context = {"user": request.user}
+    services = ServiceType.objects.all()
+    context = {"user": request.user, "services": services}
     if request.user.is_authenticated:
         context["is_logged_in"] = True
     return render(request, "landing.html", context)
