@@ -194,7 +194,6 @@ def login_view(request):
     # GET request - redirect to auth page
     return redirect('auth')
 
-
 # -------------------------------
 # Customer dashboard
 # -------------------------------
