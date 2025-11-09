@@ -109,8 +109,8 @@
                   >
                   <span class="slider"></span>
                 </label>
-                <span class="toggle-label" id="label_{{ day.day_of_week }}">
-                  {% if day.is_available %}Available{% else %}Day Off{% endif %}
+                <span class="toggle-label {% if day.is_available %}available{% endif %}" id="label_{{ day.day_of_week }}">
+                    {% if day.is_available %}Available{% else %}Day Off{% endif %}
                 </span>
               </div>
             </div>
