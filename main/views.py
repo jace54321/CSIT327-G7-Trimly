@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from .models import Barber, Customer, Reservation, ServiceType, Schedule, WeeklyAvailability
+from .models import Barber, Customer, Reservation, ServiceType, Schedule 
 from django.contrib import messages
 from django.db import IntegrityError
 from django.contrib.auth.password_validation import validate_password
@@ -15,9 +15,9 @@ import json
 from django.utils import timezone
 from django.urls import reverse
 from datetime import datetime, timedelta
-from django.db.models import Q, F, ExpressionWrapper, DateTimeField, DurationField
+from django.db.models import F, ExpressionWrapper, DateTimeField, DurationField
+from django.db.models import Q
 from django.template.loader import render_to_string
-import pytz
 
 
 # -------------------------------
@@ -27,8 +27,7 @@ def landing_view(request):
     """
     Renders the landing page.
     """
-    services = ServiceType.objects.all()
-    context = {"user": request.user, "services": services}
+    context = {"user": request.user}
     if request.user.is_authenticated:
         context["is_logged_in"] = True
     return render(request, "landing.html", context)
@@ -163,21 +162,29 @@ def registration_view(request):
 
 
 # -------------------------------
-# Handles user login (Account Enumeration Fix)
+# Handles user login
 # -------------------------------
 def login_view(request):
     if request.method == "POST":
-        email_or_username = request.POST.get("username", "").strip()
-        password = request.POST.get("password", "").strip()
+        email_or_username = request.POST.get("email")
+        password = request.POST.get("password")
         
-        username = email_or_username
-        if "@" in email_or_username:
-            try:
-                user_obj = User.objects.get(email=email_or_username)
-                username = user_obj.username
-            except User.DoesNotExist:
-                pass
-
+        user_exists = False
+        try:
+            user_obj = User.objects.get(email=email_or_username)
+            username = user_obj.username
+            user_exists = True
+        except User.DoesNotExist:
+            if User.objects.filter(username=email_or_username).exists():
+                user_exists = True
+                username = email_or_username
+            else:
+                username = None
+        
+        if not user_exists:
+            messages.error(request, 'User not found. Please check your email or username.')
+            return redirect('auth')
+        
         user = authenticate(request, username=username, password=password)
         
         if user is not None:
@@ -189,158 +196,12 @@ def login_view(request):
             else:
                 return redirect("landing")
         
-        messages.error(request, 'Invalid Credentials. Please try again.')
+        messages.error(request, 'Invalid password. Please try again.')
         return redirect('auth')
     
     # GET request - redirect to auth page
     return redirect('auth')
 
-def _get_barber_slots_for_date(barber, date_obj, duration_minutes):
-    """
-    The core logic for finding available slots. (V2)
-    Implements the "Rule + Exception" system with blockers.
-    
-    1. Find base hours: Check for a POSITIVE override first.
-    2. If none, fall back to the "Rule" (WeeklyAvailability).
-    3. Generate all potential slots.
-    4. Find all "Blockers" (Reservations AND Negative Overrides).
-    5. Filter slots against all blockers.
-    """
-    
-    start_time = None
-    end_time = None
-    slot_duration = 30 # Default slot duration
-
-    # 1. Check for a POSITIVE override (is_available=True)
-    positive_override = Schedule.objects.filter(
-        barber=barber,
-        date=date_obj,
-        is_available=True
-    ).first()
-    
-    if positive_override:
-        # A positive exception exists for this date. Use it.
-        start_time = positive_override.start_time
-        end_time = positive_override.end_time
-        slot_duration = positive_override.slot_duration
-    else:
-        # 2. No positive override found. Fall back to the "Rule".
-        day_of_week = date_obj.weekday() # 0=Monday, 6=Sunday
-        rule = WeeklyAvailability.objects.filter(
-            barber=barber,
-            day_of_week=day_of_week,
-            is_available=True
-        ).first()
-        
-        if not rule:
-            # It's a day off and no positive override exists.
-            return []
-        
-        start_time = rule.start_time
-        end_time = rule.end_time
-        # We can add slot_duration to WeeklyAvailability later if needed
-
-    # 3. Generate all potential slots for the day
-    potential_slots = []
-    
-    dummy_date = datetime(2000, 1, 1)
-    current_dt = datetime.combine(dummy_date, start_time)
-    end_dt = datetime.combine(dummy_date, end_time)
-    
-    last_possible_start_dt = end_dt - timedelta(minutes=duration_minutes)
-
-    while current_dt <= last_possible_start_dt:
-        potential_slots.append(current_dt.time())
-        current_dt += timedelta(minutes=slot_duration)
-
-    if not potential_slots:
-        return []
-
-    # 4. Find all "Blockers" for this day
-    
-    local_tz = timezone.get_current_timezone()
-    day_start_dt = local_tz.localize(datetime.combine(date_obj, datetime.min.time()))
-    day_end_dt = local_tz.localize(datetime.combine(date_obj, datetime.max.time()))
-
-    # 4a. Get Booked Reservations
-    booked_reservations = Reservation.objects.annotate(
-        booking_end_time=ExpressionWrapper(
-            F('appointment_datetime') + F('duration') * timedelta(minutes=1),
-            output_field=DateTimeField()
-        )
-    ).filter(
-        barber=barber,
-        status__in=['pending', 'confirmed', 'in_progress'],
-        appointment_datetime__lt=day_end_dt, # Starts before the day ends
-        booking_end_time__gt=day_start_dt    # Ends after the day begins
-    )
-    
-    # 4b. Get Negative Overrides (Blockers from Schedule model)
-    negative_overrides = Schedule.objects.filter(
-        barber=barber,
-        date=date_obj,
-        is_available=False
-    )
-
-    # 5. Filter potential slots against all blockers
-    available_slots = []
-    for slot_time in potential_slots:
-        # Create datetime objects for comparison
-        slot_start_dt = datetime.combine(dummy_date, slot_time)
-        slot_end_dt = slot_start_dt + timedelta(minutes=duration_minutes)
-        
-        is_clear = True
-        
-        # Check against reservations
-        for res in booked_reservations:
-            res_start_time = res.appointment_datetime.astimezone(local_tz).time()
-            res_end_time = res.booking_end_time.astimezone(local_tz).time()
-            
-            # Check for overlap: (StartA < EndB) and (EndA > StartB)
-            if (slot_time < res_end_time) and (slot_end_dt.time() > res_start_time):
-                is_clear = False
-                break
-        
-        if not is_clear:
-            continue # Conflicted with a reservation, skip to next slot
-
-        # Check against negative overrides (blockers)
-        for blocker in negative_overrides:
-            # Check for overlap
-            if (slot_time < blocker.end_time) and (slot_end_dt.time() > blocker.start_time):
-                is_clear = False
-                break
-        
-        if is_clear:
-            available_slots.append(slot_time)
-
-    return available_slots
-
-@login_required(login_url='auth')
-def get_available_slots_api(request, barber_id, date_str):
-    """
-    API endpoint for the customer dashboard to fetch available slots
-    for a specific barber, date, and service duration.
-    """
-    try:
-        barber = get_object_or_404(Barber, id=barber_id)
-        date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
-        
-        # Get duration from query param (e.g., ?duration=60)
-        duration = int(request.GET.get('duration', 30)) 
-
-        # Call our new helper function
-        slots = _get_barber_slots_for_date(barber, date_obj, duration)
-        
-        # Format the time for the user
-        formatted_slots = [t.strftime('%I:%M %p') for t in slots]
-        
-        return JsonResponse({"success": True, "slots": formatted_slots})
-
-    except ValueError:
-        return JsonResponse({"success": False, "error": "Invalid date format"}, status=400)
-    except Exception as e:
-        return JsonResponse({"success": False, "error": str(e)}, status=500)
 
 # -------------------------------
 # Customer dashboard
@@ -449,13 +310,14 @@ def customer_dashboard(request):
 # -------------------------------
 # Create new booking
 # -------------------------------
-@login_required(login_url='auth') 
+@login_required(login_url='auth') # Using new 'auth' login URL
 def create_booking_view(request):
     """Create a new booking"""
     if request.method != 'POST':
         return redirect('customer_dashboard')
     
-    book_form_url = f"{reverse('customer_dashboard')}?action=book"
+    # Add a redirect URL with the action parameter for error cases
+    book_form_url = 'customer_dashboard'
     
     try:
         customer = request.user.customer_profile
@@ -464,13 +326,14 @@ def create_booking_view(request):
         service_id = request.POST.get('service_id')
         barber_id = request.POST.get('barber_id')
         appointment_date_str = request.POST.get('appointment_date')
-        appointment_time_str = request.POST.get('appointment_time') # "HH:MM" (24-hr)
+        appointment_time_str = request.POST.get('appointment_time')
         notes = request.POST.get('notes', '').strip()
         
         # Validate required fields
         if not all([service_id, barber_id, appointment_date_str, appointment_time_str]):
             messages.error(request, 'All fields are required.')
-            return redirect(book_form_url)
+            # MERGED: Using the better redirect from your branch
+            return redirect(f"{reverse('customer_dashboard')}?action=book")
         
         # Get service and barber
         service = get_object_or_404(ServiceType, id=service_id, is_active=True)
@@ -483,28 +346,50 @@ def create_booking_view(request):
             appointment_datetime = timezone.make_aware(datetime.combine(appointment_date, appointment_time))
         except ValueError:
             messages.error(request, 'Invalid date or time format.')
-            return redirect(book_form_url)
+            return redirect(f"{reverse('customer_dashboard')}?action=book")
 
-        # === NEW VALIDATION LOGIC ===
+        # --- MERGED: Using the advanced validation from your branch ---
         
-        # 1. Check if appointment is in the future
+        # Calculate appointment end time
+        appointment_end_datetime = appointment_datetime + timedelta(minutes=service.duration)
+        appointment_end_time = appointment_end_datetime.time()
+
+        # Validate appointment is in the future
         if appointment_datetime < timezone.now():
             messages.error(request, 'Cannot book appointments in the past.')
-            return redirect(book_form_url)
+            return redirect(f"{reverse('customer_dashboard')}?action=book")
         
-        # 2. Use our new helper function to get all *truly* available slots
-        available_slots = _get_barber_slots_for_date(
+        # VALIDATION 1: Check against Barber's Schedule
+        is_available = Schedule.objects.filter(
             barber=barber,
-            date_obj=appointment_date,
-            duration_minutes=service.duration
-        )
-        
-        # 3. Check if the customer's chosen time is in the valid list
-        if appointment_time not in available_slots:
-            messages.error(request, 'Sorry, that time slot is no longer available or is not valid for the selected service.')
-            return redirect(book_form_url)
+            date=appointment_date,
+            start_time__lte=appointment_time,      # Slot starts after or at schedule start
+            end_time__gte=appointment_end_time,  # Slot ends before or at schedule end
+            is_available=True
+        ).exists()
 
-        # === END OF NEW VALIDATION ===
+        if not is_available:
+            messages.error(request, f'The barber is not available at the selected time slot ({appointment_time_str} - {appointment_end_time.strftime("%H:%M")}).')
+            return redirect(f"{reverse('customer_dashboard')}?action=book")
+
+        # VALIDATION 2: Check for Conflicting Bookings
+        conflicting_bookings = Reservation.objects.annotate(
+            booking_end_time=ExpressionWrapper(
+                F('appointment_datetime') + F('duration') * timedelta(minutes=1),
+                output_field=DateTimeField()
+            )
+        ).filter(
+            barber=barber,
+            status__in=['pending', 'confirmed', 'in_progress'],
+            appointment_datetime__lt=appointment_end_datetime,  # Existing booking starts before new one ends
+            booking_end_time__gt=appointment_datetime         # Existing booking ends after new one starts
+        )
+
+        if conflicting_bookings.exists():
+            messages.error(request, 'This time slot is already booked or overlaps with another appointment.')
+            return redirect(f"{reverse('customer_dashboard')}?action=book")
+
+        # --- End of MERGED validation ---
         
         # Create reservation
         reservation = Reservation.objects.create(
@@ -526,11 +411,10 @@ def create_booking_view(request):
     
     except Customer.DoesNotExist:
         messages.error(request, 'Customer profile not found.')
-        return redirect('auth')
+        return redirect('auth') # Using new 'auth' login URL
     except Exception as e:
         messages.error(request, f'An error occurred: {str(e)}')
-        return redirect(book_form_url)
-
+        return redirect(f"{reverse('customer_dashboard')}?action=book")
 
 
 # -------------------------------
@@ -868,17 +752,16 @@ def update_booking_status(request, booking_id):
     
     return redirect('barber_dashboard')
 
-@login_required(login_url='auth')
+@login_required(login_url='auth') # Using new 'auth' login URL
 def barber_schedule_view(request):
     """
-    Manages a barber's specific date overrides (the "Exceptions").
-    This handles both adding extra availability and blocking time.
+    Manages a barber's weekly schedule.
     """
     try:
         barber = request.user.barber_profile
     except Barber.DoesNotExist:
         messages.error(request, "Barber profile not found.")
-        return redirect('auth')
+        return redirect('auth') # Using new 'auth' login URL
 
     if request.method == "POST":
         action = request.POST.get('action')
@@ -888,13 +771,8 @@ def barber_schedule_view(request):
                 date_str = request.POST.get('date')
                 start_time_str = request.POST.get('start_time')
                 end_time_str = request.POST.get('end_time')
-                
-                # --- NEW LOGIC ---
-                override_type = request.POST.get('override_type')
-                is_available = (override_type == 'available')
-                # --- END NEW LOGIC ---
 
-                if not all([date_str, start_time_str, end_time_str, override_type]):
+                if not all([date_str, start_time_str, end_time_str]):
                     messages.error(request, "All fields are required.")
                     return redirect('barber_schedule')
 
@@ -919,49 +797,42 @@ def barber_schedule_view(request):
                 ).exists()
 
                 if overlapping:
-                    messages.error(request, f"An override already exists that overlaps with {start_time_str} - {end_time_str} on {date_str}.")
+                    messages.error(request, f"A schedule already exists that overlaps with {start_time_str} - {end_time_str} on {date_str}.")
                 else:
                     Schedule.objects.create(
                         barber=barber,
                         date=date,
                         start_time=start_time,
                         end_time=end_time,
-                        is_available=is_available  # <-- Use the new variable
+                        is_available=True
                     )
-                    
-                    if is_available:
-                        messages.success(request, f"Extra availability added for {date_str}.")
-                    else:
-                        messages.success(request, f"Time blocked on {date_str}.")
+                    messages.success(request, f"Availability added for {date_str}.")
             
             elif action == 'delete':
                 schedule_id = request.POST.get('schedule_id')
                 schedule_to_delete = get_object_or_404(Schedule, id=schedule_id, barber=barber)
                 
-                # Check for bookings ONLY if it's a positive override
-                # We should be able to delete a "blocker" even if bookings exist *around* it.
-                if schedule_to_delete.is_available:
-                    bookings_exist = Reservation.objects.filter(
-                        barber=barber,
-                        appointment_datetime__date=schedule_to_delete.date,
-                        appointment_datetime__time__gte=schedule_to_delete.start_time,
-                        appointment_datetime__time__lt=schedule_to_delete.end_time,
-                        status__in=['pending', 'confirmed']
-                    ).exists()
+                # Check for bookings within this schedule
+                bookings_exist = Reservation.objects.filter(
+                    barber=barber,
+                    appointment_datetime__date=schedule_to_delete.date,
+                    appointment_datetime__time__gte=schedule_to_delete.start_time,
+                    appointment_datetime__time__lt=schedule_to_delete.end_time,
+                    status__in=['pending', 'confirmed']
+                ).exists()
 
-                    if bookings_exist:
-                        messages.error(request, "Cannot delete this schedule as it has active bookings. Please cancel or reschedule the bookings first.")
-                        return redirect('barber_schedule')
-
-                schedule_to_delete.delete()
-                messages.success(request, "Schedule override deleted.")
+                if bookings_exist:
+                    messages.error(request, "Cannot delete schedule with active bookings. Please cancel or reschedule bookings first.")
+                else:
+                    schedule_to_delete.delete()
+                    messages.success(request, "Schedule slot deleted.")
         
         except Exception as e:
             messages.error(request, f"An error occurred: {str(e)}")
         
         return redirect('barber_schedule')
 
-    # GET request: Display ALL schedules (available and blockers)
+    # GET request: Display schedules
     today = timezone.now().date()
     schedules = Schedule.objects.filter(
         barber=barber,
@@ -974,80 +845,6 @@ def barber_schedule_view(request):
         'today_str': today.strftime('%Y-%m-%d')
     }
     return render(request, "barber_schedule.html", context)
-
-
-@login_required(login_url='auth')
-def manage_weekly_availability(request):
-    """
-    Manages a barber's 7-day weekly availability template (the "Rules").
-    """
-    try:
-        barber = request.user.barber_profile
-    except Barber.DoesNotExist:
-        messages.error(request, "Barber profile not found.")
-        return redirect('auth')
-
-    if request.method == "POST":
-        try:
-            for i in range(7):  # Loop for 0=Monday to 6=Sunday
-                # Get the object for this day
-                avail = get_object_or_404(WeeklyAvailability, barber=barber, day_of_week=i)
-                
-                # Check if the "Day Off" checkbox is ticked
-                is_available = request.POST.get(f'is_available_{i}') == 'on'
-                
-                avail.is_available = is_available
-                
-                if is_available:
-                    # Get times from the form
-                    start_time_str = request.POST.get(f'start_time_{i}')
-                    end_time_str = request.POST.get(f'end_time_{i}')
-                    
-                    if not start_time_str or not end_time_str:
-                        raise ValidationError(f"Missing start/end time for {avail.get_day_of_week_display()}.")
-
-                    start_time = datetime.strptime(start_time_str, '%H:%M').time()
-                    end_time = datetime.strptime(end_time_str, '%H:%M').time()
-
-                    if start_time >= end_time:
-                         raise ValidationError(f"End time must be after start time for {avail.get_day_of_week_display()}.")
-
-                    avail.start_time = start_time
-                    avail.end_time = end_time
-                else:
-                    # If it's a day off, clear the times
-                    avail.start_time = None
-                    avail.end_time = None
-                
-                avail.save() # Save the changes for this day
-            
-            messages.success(request, "Your weekly availability has been updated successfully.")
-        
-        except ValidationError as e:
-            messages.error(request, e.message)
-        except Exception as e:
-            messages.error(request, f"An error occurred: {str(e)}")
-        
-        return redirect('manage_weekly_availability')
-
-
-    # GET request: Load or create the 7-day schedule
-    days_data = []
-    for i in range(7): # 0=Monday, 6=Sunday
-        # get_or_create ensures that a template row exists for every day
-        obj, created = WeeklyAvailability.objects.get_or_create(
-            barber=barber, 
-            day_of_week=i,
-            defaults={'is_available': False, 'start_time': None, 'end_time': None}
-        )
-        days_data.append(obj)
-
-    context = {
-        'barber': barber,
-        'days': days_data
-    }
-    return render(request, "manage_weekly_availability.html", context)
-
 
 
 @login_required(login_url='auth') # Using new 'auth' login URL

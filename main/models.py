@@ -134,54 +134,6 @@ class Customer(models.Model):
         """Get total number of reservations for this customer"""
         return self.reservations.count()
 
-class WeeklyAvailability(models.Model):
-    """
-    Stores the barber's default weekly schedule (the "Rule").
-    The existing 'Schedule' model will be used for overrides (the "Exceptions").
-    """
-    DAY_CHOICES = [
-        (0, 'Monday'),
-        (1, 'Tuesday'),
-        (2, 'Wednesday'),
-        (3, 'Thursday'),
-        (4, 'Friday'),
-        (5, 'Saturday'),
-        (6, 'Sunday'),
-    ]
-
-    barber = models.ForeignKey(Barber, on_delete=models.CASCADE, related_name='weekly_availability')
-    day_of_week = models.IntegerField(choices=DAY_CHOICES, help_text="Day of the week (0=Monday, 6=Sunday)")
-    
-    start_time = models.TimeField(null=True, blank=True, help_text="Default start time for this day")
-    end_time = models.TimeField(null=True, blank=True, help_text="Default end time for this day")
-    
-    is_available = models.BooleanField(default=True, help_text="Toggle for a default day off")
-
-    class Meta:
-        verbose_name = "Weekly Availability"
-        verbose_name_plural = "Weekly Availabilities"
-        # This is crucial: A barber can only have ONE rule for "Monday"
-        unique_together = ['barber', 'day_of_week']
-        ordering = ['barber', 'day_of_week']
-
-    def __str__(self):
-        day = self.get_day_of_week_display()
-        if self.is_available and self.start_time and self.end_time:
-            return f"{self.barber.get_full_name()} - {day}: {self.start_time.strftime('%I:%M %p')} - {self.end_time.strftime('%I:%M %p')}"
-        return f"{self.barber.get_full_name()} - {day}: Day Off"
-
-    def clean(self):
-        """Validation for the rules."""
-        if self.is_available:
-            if not self.start_time or not self.end_time:
-                raise ValidationError("Start time and end time are required if the day is marked as available.")
-            if self.start_time >= self.end_time:
-                raise ValidationError("End time must be after start time.")
-        else:
-            # If it's a day off, nullify times for consistency.
-            self.start_time = None
-            self.end_time = None
-
 
 class Schedule(models.Model):
     """
