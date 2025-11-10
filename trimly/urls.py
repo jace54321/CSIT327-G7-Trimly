@@ -44,6 +44,7 @@ urlpatterns = [
     path('dashboard/barber/toggle-availability/', views.toggle_availability, name='toggle_availability'),
     path('dashboard/barber/api/', views.barber_dashboard_api, name='barber_dashboard_api'),
     path('dashboard/barber/schedule/', views.barber_schedule_view, name='barber_schedule'),
+    path('dashboard/barber/availability/', views.manage_weekly_availability, name='manage_weekly_availability'),
     path('dashboard/barber/quick-actions/', views.quick_actions_view, name='quick_actions'),
     
     # Booking actions
@@ -52,4 +53,5 @@ urlpatterns = [
     path("bookings/<int:booking_id>/reschedule/", views.reschedule_booking_view, name="reschedule_booking"),
     path("bookings/<int:booking_id>/update-status/", views.update_booking_status, name="update_booking_status"),
     path("bookings/<int:booking_id>/rate/", views.submit_rating_view, name="submit_rating"),
+    path('api/get-slots/<int:barber_id>/<str:date_str>/', views.get_available_slots_api, name='get_available_slots_api'),
 ]
