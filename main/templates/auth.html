@@ -14,7 +14,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <!-- Navbar -->
     <nav class="navbar navbar-glass">
         <div class="navbar-left">
             <a href="{% url 'landing' %}" class="logo-link">
@@ -27,10 +26,8 @@
         </div>
     </nav>
 
-    <!-- Auth Container -->
     <div class="auth-container">
         <div class="auth-card">
-            <!-- Tab Switcher -->
             <div class="auth-tabs">
                 <button class="auth-tab {% if not show_register %}active{% endif %}" data-tab="login" onclick="switchTab('login')">
                     Sign In
@@ -41,7 +38,6 @@
                 <div class="tab-indicator {% if show_register %}register{% endif %}"></div>
             </div>
 
-            <!-- Django Messages -->
             {% if messages %}
                 {% for message in messages %}
                     <div class="{% if message.tags == 'error' %}error-message{% else %}success-message{% endif %} show">
@@ -51,7 +47,6 @@
                 {% endfor %}
             {% endif %}
 
-            <!-- Login Form -->
             <form id="loginForm" method="POST" action="{% url 'login' %}" class="auth-form {% if not show_register %}active{% endif %}">
                 {% csrf_token %}
                 
@@ -59,14 +54,14 @@
                 <p>Sign in to your account</p>
 
                 <div class="form-group">
-                    <label for="login-email">Email Address</label>
+                    <label for="login-identifier">Email or Username</label>
                     <input 
-                        type="email" 
-                        id="login-email" 
-                        name="email" 
-                        placeholder="Enter your email"
+                        type="text" 
+                        id="login-identifier" 
+                        name="username" 
+                        placeholder="Enter your email or username"
                         required
-                        autocomplete="email"
+                        autocomplete="username"
                     >
                 </div>
 
@@ -100,7 +95,6 @@
 
                 <div class="divider">Or continue with</div>
 
-                <!-- Social Login -->
                 <div class="social-login">
                     <a href="#" class="social-btn google">
                         <i class="fab fa-google"></i>
@@ -113,14 +107,12 @@
                 </div>
             </form>
 
-            <!-- Registration Form -->
             <form id="registerForm" method="POST" action="{% url 'register' %}" class="auth-form {% if show_register %}active{% endif %}">
                 {% csrf_token %}
                 
                 <h2>Create Account</h2>
                 <p>Join us for premium grooming</p>
 
-                <!-- Username Field -->
                 <div class="form-group">
                     <label for="username">Username</label>
                     <input 
@@ -133,7 +125,6 @@
                     >
                 </div>
 
-                <!-- Email Field -->
                 <div class="form-group">
                     <label for="register-email">Email Address</label>
                     <input 
@@ -147,7 +138,6 @@
                     >
                 </div>
 
-                <!-- First Name Field -->
                 <div class="form-group">
                     <label for="first-name">First Name</label>
                     <input 
@@ -160,7 +150,6 @@
                     >
                 </div>
 
-                <!-- Last Name Field -->
                 <div class="form-group">
                     <label for="last-name">Last Name</label>
                     <input 
@@ -173,7 +162,6 @@
                     >
                 </div>
 
-                <!-- Phone Number Field -->
                 <div class="form-group">
                     <label for="phone-number">Phone Number</label>
                     <input 
@@ -189,7 +177,6 @@
                     <small>Format: 09123456789 (11 digits starting with 09)</small>
                 </div>
 
-                <!-- Password Field with Validation -->
                 <div class="form-group">
                     <label for="register-password">Password</label>
                     <div class="password-wrapper">
@@ -214,7 +201,6 @@
                     </ul>
                 </div>
 
-                <!-- Confirm Password Field -->
                 <div class="form-group">
                     <label for="confirm-password">Confirm Password</label>
                     <div class="password-wrapper">
@@ -232,7 +218,6 @@
                     </div>
                 </div>
 
-                <!-- Role Selection -->
                 <div class="form-group">
                     <label>I am a:</label>
                     <div class="role-selection">
@@ -253,7 +238,6 @@
 
                 <div class="divider">Or continue with</div>
 
-                <!-- Social Login -->
                 <div class="social-login">
                     <a href="#" class="social-btn google">
                         <i class="fab fa-google"></i>
@@ -268,7 +252,6 @@
         </div>
     </div>
 
-    <!-- JavaScript -->
     <script>
         // Tab switching (client-side only for UX)
         function switchTab(tabName) {
@@ -342,6 +325,13 @@
             });
         }
 
+        // Correct: use the variable name (loginIdentifier), not the ID string
+        const loginIdentifier = document.getElementById('login-identifier');
+        if (loginIdentifier) {
+            loginIdentifier.setAttribute('placeholder', 'Enter your email or username');
+        }
+
+        
         // Check if we should show register form based on URL or context
         window.addEventListener('DOMContentLoaded', function() {
             const urlParams = new URLSearchParams(window.location.search);
