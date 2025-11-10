@@ -7,20 +7,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Trimly - Barber Dashboard</title>
   
-  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
   
-  <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-  <!-- Base CSS (Global Styles) -->
   <link rel="stylesheet" href="{% static 'base.css' %}">
   
-  <!-- Page-specific CSS -->
   <link rel="stylesheet" href="{% static 'barber_dashboard.css' %}">
 </head>
 <body>
-  <!-- Navbar with Glassmorphism (using base.css styles) -->
   <nav class="navbar navbar-glass">
     <div class="navbar-left">
       <a href="{% url 'barber_dashboard' %}" class="logo-link">
@@ -49,7 +44,6 @@
     </div>
   </nav>
 
-  <!-- Main Dashboard -->
   <section class="dashboard">
     <div class="dashboard-header">
       <div>
@@ -57,7 +51,6 @@
         <p>Welcome back, {{ request.user.username }}! Here's your schedule overview.</p>
       </div>
 
-      <!-- Availability Toggle -->
       <div class="availability-toggle">
         <label class="toggle-label" for="availability-switch">Available for bookings</label>
         <label class="switch">
@@ -70,12 +63,10 @@
       </div>
     </div>
 
-    <!-- Stats Cards -->
     <div class="stats" id="stats-wrapper">
       {% include "_barber_stats.html" %}
     </div>
 
-    <!-- Middle Section -->
     <div class="schedule-section">
       <div class="schedule" id="today-schedule-wrapper">
         {% include "_barber_today_schedule.html" %}
@@ -94,7 +85,6 @@
       </div>
     </div>
 
-    <!-- Upcoming Appointments -->
     <div class="upcoming">
       <h3><i class="fas fa-clock"></i> Upcoming Appointments</h3>
       {% if upcoming_appointments %}
