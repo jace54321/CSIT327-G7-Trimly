@@ -1,0 +1,260 @@
+/* ============================================================================
+   MANAGE WEEKLY AVAILABILITY PAGE - Glassmorphism Design
+   ============================================================================ */
+
+   body {
+    color: var(--text-on-dark);
+  }
+  
+  /* --- Main Layout --- */
+  .availability-container {
+    max-width: 900px;
+    margin: var(--spacing-lg) auto;
+    padding: 0 var(--spacing-md);
+  }
+  
+  .availability-header {
+    margin-bottom: var(--spacing-lg);
+  }
+  
+  .availability-header h2 {
+    font-family: "Playfair Display", serif;
+    font-size: 36px;
+    font-weight: 900;
+    color: #fff;
+    margin-bottom: var(--spacing-xs);
+  }
+  
+  .availability-header p {
+    font-size: 16px;
+    color: var(--muted-on-dark);
+  }
+  
+  /* --- Glass Card --- */
+  .glass-card {
+    background: var(--glass-bg-dark);
+    border: 1.2px solid var(--glass-border);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  }
+  
+  /* --- Availability List --- */
+  .weekly-schedule-list {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .day-row {
+    display: grid;
+    grid-template-columns: 120px 1fr auto;
+    gap: var(--spacing-md);
+    align-items: center;
+    padding: var(--spacing-md) 0;
+    border-bottom: 1px solid var(--glass-border);
+  }
+  
+  .day-row:first-child {
+    padding-top: 0;
+  }
+  .day-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+  
+  .day-label strong {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-on-dark);
+  }
+  
+  .day-times {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .day-times span {
+    color: var(--muted-on-dark);
+    font-size: 14px;
+  }
+  
+  .day-times input[type="time"] {
+    font-size: 15px;
+    padding: 10px 12px;
+    width: 120px;
+    text-align: center;
+  }
+  
+  .day-times input[type="time"]:disabled {
+    background: rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.05);
+    color: var(--muted-on-dark);
+    opacity: 0.6;
+  }
+  
+  .day-toggle {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .toggle-label {
+    font-weight: 600;
+    font-size: 14px;
+    color: #ef4444; /* Red for "Day Off" */
+    transition: color 0.3s ease;
+    width: 80px; /* Give it space */
+  }
+  
+  .toggle-label.available,
+  input:checked + .slider + .toggle-label {
+    color: #22c55e; /* Green for "Available" */
+  }
+  
+  /* --- Toggle Switch CSS --- */
+  .toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 26px;
+  }
+  .toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(239, 68, 68, 0.25);
+    border: 1.2px solid rgba(239, 68, 68, 0.35);
+    transition: all 0.4s cubic-bezier(0.34, 0.1, 0.64, 1);
+    border-radius: 24px;
+  }
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background: #ffffff;
+    transition: all 0.4s cubic-bezier(0.34, 0.1, 0.64, 1);
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+  input:checked + .slider {
+    background: rgba(34, 197, 94, 0.25);
+    border-color: rgba(34, 197, 94, 0.45);
+  }
+  input:checked + .slider:before {
+    transform: translateX(24px);
+  }
+  /* --- End Toggle --- */
+  
+  
+  /* --- Form Actions --- */
+  .form-actions {
+    margin-top: var(--spacing-lg);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--glass-border);
+    display: flex;
+    justify-content: flex-end;
+  }
+  
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+    padding: 13px 24px;
+    border: 1.2px solid transparent;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    background: var(--accent);
+    color: #1b120a;
+    box-shadow: 0 4px 12px rgba(243, 211, 124, .25);
+    border-color: rgba(255, 232, 180, .4);
+  }
+  .btn-primary:hover {
+    background: #ffe4a1;
+    box-shadow: 0 8px 20px rgba(243, 211, 124, .4);
+    transform: translateY(-2px);
+  }
+  
+  /* --- Flash Messages --- */
+  .messages-container {
+    max-width: 900px;
+    margin: 0 auto var(--spacing-md) auto;
+  }
+  .alert {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 15px;
+    margin-bottom: var(--spacing-sm);
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #f87171;
+  }
+  .alert-success {
+    background: rgba(34, 197, 94, 0.1);
+    border-color: rgba(34, 197, 94, 0.3);
+    color: #4ade80;
+  }
+  .alert i { font-size: 18px; }
+  .close-alert {
+    margin-left: auto;
+    color: inherit;
+    text-decoration: none;
+    font-size: 20px;
+    opacity: 0.7;
+    transition: opacity var(--transition-base);
+  }
+  .close-alert:hover { opacity: 1; color: inherit; }
+  
+  /* --- Responsive --- */
+  @media (max-width: 768px) {
+    .availability-container {
+      padding: 0 var(--spacing-sm);
+    }
+    .day-row {
+      grid-template-columns: 1fr;
+      gap: var(--spacing-sm);
+      padding: var(--spacing-md) var(--spacing-sm);
+    }
+    .day-label {
+      grid-row: 1;
+    }
+    .day-toggle {
+      grid-row: 2;
+      justify-content: space-between;
+    }
+    .day-times {
+      grid-row: 3;
+      gap: 8px;
+    }
+    .day-times input[type="time"] {
+      width: 100%;
+      flex: 1;
+    }
+    .form-actions {
+      margin-top: var(--spacing-md);
+    }
+    .btn-primary {
+      width: 100%;
+    }
+  }
