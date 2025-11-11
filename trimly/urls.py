@@ -1,5 +1,7 @@
 from django.contrib import admin
 from django.urls import path
+from django.conf import settings
+from django.conf.urls.static import static
 from main import views
 from django.contrib.auth import views as auth_views
 
@@ -54,4 +56,4 @@ urlpatterns = [
     path("bookings/<int:booking_id>/update-status/", views.update_booking_status, name="update_booking_status"),
     path("bookings/<int:booking_id>/rate/", views.submit_rating_view, name="submit_rating"),
     path('api/get-slots/<int:barber_id>/<str:date_str>/', views.get_available_slots_api, name='get_available_slots_api'),
-]
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
