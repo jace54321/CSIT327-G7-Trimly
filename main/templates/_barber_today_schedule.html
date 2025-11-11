@@ -1,4 +1,5 @@
 {% load static %}
+<link rel="stylesheet" href="{% static 'barber_schedule.css' %}">
 <h3>Today's Schedule</h3>{% if today_appointments %}
   <ul class="schedule-list">
     {% for appt in today_appointments %}

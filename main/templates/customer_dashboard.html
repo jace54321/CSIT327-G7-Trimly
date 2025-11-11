@@ -750,19 +750,23 @@
             }
         }
 
-        async function fetchAvailableSlots(barberId, dateStr, duration) {
-            const container = document.getElementById('timeSlotsContainer');
-            container.innerHTML = '<div class="time-slot-placeholder loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
-            
-            try {
-                const url = `/api/get-slots/${barberId}/${dateStr}/?duration=${duration}`;
-                const response = await fetch(url);
+            async function fetchAvailableSlots(barberId, dateStr, duration) {
+                const container = document.getElementById('timeSlotsContainer');
+                container.innerHTML = `<div class="time-slot-placeholder loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>`;
                 
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                
-                const data = await response.json();
+                try {
+                    // FIXED: Absolute URL with trailing slash
+                    const url = `/api/get-slots/${barberId}/${dateStr}/?duration=${duration}`;
+                    
+                    const response = await fetch(url);
+                    
+                    // FIXED: Added error handling
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+
                 
                 if (data.success && data.slots.length > 0) {
                     displayTimeSlots(data.slots);
@@ -1005,43 +1009,89 @@
             rescheduleData.date = `${year}-${month}-${day}`;
             document.getElementById('rescheduleNewDate').value = rescheduleData.date;
             renderRescheduleCalendar();
-            generateRescheduleTimeSlots(date); // This is still the old client-side logic
+            checkAndFetchRescheduleSlots();
             checkRescheduleComplete();
         }
 
         function generateRescheduleTimeSlots(date) {
-            const container = document.getElementById('rescheduleTimeSlotsContainer');
-            container.innerHTML = '';
-            
-            const now = new Date();
-            const isToday = date.toDateString() === now.toDateString();
-            
-            // FAKE HARDCODED HOURS
-            const businessHours = { start: 9, end: 18, slotDuration: 30 };
-            
-            for (let hour = businessHours.start; hour < businessHours.end; hour++) {
-                for (let minute = 0; minute < 60; minute += businessHours.slotDuration) {
-                    const slotTime = new Date(date);
-                    slotTime.setHours(hour, minute, 0, 0);
-                    
-                    if (isToday && slotTime <= now) continue;
-                    
-                    const slotElement = document.createElement('div');
-                    slotElement.className = 'time-slot';
-                    if (rescheduleData.time === `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`) {
-                        slotElement.classList.add('selected');
-                    }
-                    
-                    const timeStr = slotTime.toLocaleTimeString('en-US', {
-                        hour: 'numeric',
-                        minute: '2-digit',
-                        hour12: true
-                    });
-                    slotElement.textContent = timeStr;
-                    slotElement.onclick = () => selectRescheduleTime(hour, minute);
-                    container.appendChild(slotElement);
+            // This function is now replaced by checkAndFetchRescheduleSlots()
+            // No-op
+        function checkAndFetchRescheduleSlots() {
+            // Only fetch if all dependencies are ready
+            if (rescheduleData.bookingId && rescheduleData.date) {
+                // Find the selected booking to get barber and service duration
+                const booking = window.upcomingBookings?.find(b => b.id === rescheduleData.bookingId) || null;
+                let barberId = null;
+                let duration = null;
+                if (booking) {
+                    barberId = booking.barber_id;
+                    duration = booking.duration;
+                } else {
+                    // Fallback: try to get from DOM (not ideal)
+                    barberId = document.getElementById('final-barber').value;
+                    duration = document.getElementById('final-service').value;
+                }
+                if (barberId && duration) {
+                    fetchRescheduleSlots(barberId, rescheduleData.date, duration);
                 }
             }
+        }
+
+        async function fetchRescheduleSlots(barberId, dateStr, duration) {
+            const container = document.getElementById('rescheduleTimeSlotsContainer');
+            container.innerHTML = `<div class="time-slot-placeholder loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>`;
+            
+            try {
+                // FIXED: Absolute URL with trailing slash
+                const url = `/api/get-slots/${barberId}/${dateStr}/?duration=${duration}`;
+                
+                const response = await fetch(url);
+                
+                // FIXED: Added error handling
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+
+                if (data.success && data.slots.length > 0) {
+                    displayRescheduleTimeSlots(data.slots);
+                } else {
+                    container.innerHTML = '<div class="time-slot-placeholder">No available slots for this day.</div>';
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                container.innerHTML = '<div class="time-slot-placeholder error">Could not load times.</div>';
+            }
+        }
+
+        function displayRescheduleTimeSlots(slots) {
+            const container = document.getElementById('rescheduleTimeSlotsContainer');
+            container.innerHTML = '';
+            slots.forEach(timeStr => {
+                const slotElement = document.createElement('div');
+                slotElement.className = 'time-slot';
+                slotElement.textContent = timeStr;
+                slotElement.onclick = () => selectRescheduleTimeStr(timeStr);
+                container.appendChild(slotElement);
+            });
+        }
+
+        function selectRescheduleTimeStr(timeDisplay) {
+            rescheduleData.timeDisplay = timeDisplay;
+            // Convert "09:00 AM" to "09:00" (24-hr)
+            const parts = timeDisplay.match(/(\d+):(\d+) (AM|PM)/);
+            let hour = parseInt(parts[1]);
+            const minute = parseInt(parts[2]);
+            const ampm = parts[3];
+            if (ampm === 'PM' && hour !== 12) hour += 12;
+            if (ampm === 'AM' && hour === 12) hour = 0;
+            rescheduleData.time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+            document.getElementById('rescheduleNewTime').value = rescheduleData.time;
+            document.querySelectorAll('#rescheduleTimeSlotsContainer .time-slot').forEach(slot => slot.classList.remove('selected'));
+            event.target.classList.add('selected');
+            checkRescheduleComplete();
+        }
         }
 
         function selectRescheduleTime(hour, minute) {
