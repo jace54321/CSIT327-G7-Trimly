@@ -71,6 +71,7 @@ trimly/
 | Zydric Abel              | Scrum Master     | [zydric.abel@cit.edu](mailto:zydric.abel@cit.edu)                         |
 
 ## Deployed Link
+    https://trimly-euq5.onrender.com/
 
 *(404)*
 
