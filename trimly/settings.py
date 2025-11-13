@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'anymail',
     'main',
 ]
 
@@ -202,17 +203,19 @@ else:
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-# Email configuration - SendGrid
+# Email configuration - SendGrid with Anymail
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY", "")
-EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
-EMAIL_HOST = 'smtp.sendgrid.net'
-EMAIL_PORT = 587
-EMAIL_HOST_USER = 'apikey'  # This is exactly the literal string 'apikey'
-EMAIL_HOST_PASSWORD = SENDGRID_API_KEY
-EMAIL_USE_TLS = True
-EMAIL_TIMEOUT = 10  # seconds
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@trimly.com")
+
+# Use Anymail backend (NOT SMTP)
+EMAIL_BACKEND = "anymail.backends.sendgrid.EmailBackend"
+
+ANYMAIL = {
+    "SENDGRID_API_KEY": SENDGRID_API_KEY,
+}
+
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "TRIMLY2025@gmail.com")
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
 
 # Password Reset Configuration
 PASSWORD_RESET_TIMEOUT = 60 * 60 * 24  # 1 day in seconds
