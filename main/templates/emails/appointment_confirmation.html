@@ -1,0 +1,64 @@
+{% autoescape off %}
+<html>
+  <body style="font-family:Arial,sans-serif;color:#333;background:#f9f9f9;padding:20px;">
+    <div style="max-width:600px;margin:0 auto;background:#ffffff;padding:30px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+      
+      <h2 style="color:#3a2e1e;font-family:'Playfair Display',serif;margin:0 0 20px;">✓ Appointment Confirmed</h2>
+      
+      <p>Hello <strong>{{ customer_name }}</strong>,</p>
+      
+      <p>Your appointment has been successfully confirmed!</p>
+      
+      <div style="background-color:#f4f4f4;padding:20px;border-radius:5px;margin:20px 0;">
+        <h3 style="margin-top:0;color:#3a2e1e;font-size:18px;">Appointment Details</h3>
+        <table style="width:100%;border-collapse:collapse;">
+          <tr>
+            <td style="padding:8px 0;font-weight:bold;width:30%;">Service:</td>
+            <td style="padding:8px 0;">{{ service }}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;font-weight:bold;">Barber:</td>
+            <td style="padding:8px 0;">{{ barber_name }}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;font-weight:bold;">Date:</td>
+            <td style="padding:8px 0;">{{ date|date:"F d, Y" }}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;font-weight:bold;">Time:</td>
+            <td style="padding:8px 0;">{{ time|time:"g:i A" }}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;font-weight:bold;">Duration:</td>
+            <td style="padding:8px 0;">{{ duration }} minutes</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;font-weight:bold;">Price:</td>
+            <td style="padding:8px 0;">₱{{ price }}</td>
+          </tr>
+        </table>
+      </div>
+      
+      <p style="margin-top:20px;">We look forward to seeing you!</p>
+      
+      <p style="text-align:center;margin:30px 0;">
+        <a href="https://trimly-euq5.onrender.com/customer-dashboard/"
+           style="background:#f3d37c;color:#1b120a;padding:14px 28px;text-decoration:none;border-radius:8px;font-weight:bold;display:inline-block;font-size:16px;">
+          View Dashboard
+        </a>
+      </p>
+      
+      <hr style="border:none;border-top:1px solid #eee;margin:30px 0;">
+      
+      <p style="color:#999;font-size:13px;">
+        If you need to cancel or reschedule, please visit your dashboard.
+      </p>
+      
+      <p style="margin-top:30px;color:#3a2e1e;">
+        Best regards,<br>
+        <strong>The Trimly Team</strong>
+      </p>
+    </div>
+  </body>
+</html>
+{% endautoescape %}

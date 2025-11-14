@@ -18,6 +18,9 @@ from datetime import datetime, timedelta
 from django.db.models import Q, F, ExpressionWrapper, DateTimeField, DurationField
 from django.template.loader import render_to_string
 import pytz
+# Email sending utility
+from .emails import send_appointment_confirmation_email, send_appointment_cancellation_email
+
 
 
 # Landing page
@@ -410,7 +413,7 @@ def customer_dashboard(request):
         return redirect("auth")
 
 
-# Create booking
+# Create booking (WITH EMAIL CONFIRMATION INTEGRATED)
 @login_required(login_url='auth') 
 def create_booking_view(request):
     """Create new booking"""
@@ -454,7 +457,8 @@ def create_booking_view(request):
             messages.error(request, 'Time slot not available.')
             return redirect(book_form_url)
         
-        Reservation.objects.create(
+        # Create the reservation
+        reservation = Reservation.objects.create(
             customer=customer,
             barber=barber,
             service_type=service,
@@ -465,9 +469,28 @@ def create_booking_view(request):
             status='pending'
         )
         
-        messages.success(request, 
-            f'Booking confirmed! {service.name} with {barber.get_full_name()} '
-            f'on {appointment_datetime.strftime("%B %d, %Y at %I:%M %p")}.')
+        # ✅ SEND CONFIRMATION EMAIL
+        try:
+            email_sent = send_appointment_confirmation_email(
+                appointment=reservation,
+                recipient_email=request.user.email
+            )
+            
+            if email_sent:
+                messages.success(request, 
+                    f'Booking confirmed! Confirmation email sent to {request.user.email}. '
+                    f'{service.name} with {barber.get_full_name()} '
+                    f'on {appointment_datetime.strftime("%B %d, %Y at %I:%M %p")}.')
+            else:
+                messages.success(request, 
+                    f'Booking confirmed! {service.name} with {barber.get_full_name()} '
+                    f'on {appointment_datetime.strftime("%B %d, %Y at %I:%M %p")}. '
+                    f'(Email notification failed)')
+        except Exception as e:
+            print(f"Email error: {e}")
+            messages.success(request, 
+                f'Booking confirmed! {service.name} with {barber.get_full_name()} '
+                f'on {appointment_datetime.strftime("%B %d, %Y at %I:%M %p")}.')
         
         return redirect('customer_dashboard')
     
@@ -497,7 +520,7 @@ def toggle_availability(request):
     return JsonResponse({"success": False, "error": "Invalid request"}, status=400)
 
 
-# Cancel booking
+# Cancel booking (WITH EMAIL CANCELLATION INTEGRATED)
 @login_required(login_url='auth')
 def cancel_booking_view(request, booking_id):
     if request.method != 'POST':
@@ -511,10 +534,32 @@ def cancel_booking_view(request, booking_id):
             messages.error(request, 'Cannot cancel within 24 hours.')
             return redirect('customer_dashboard')
         
+        # Store booking details before cancellation
+        service_name = booking.service_type.name
+        appointment_datetime = booking.appointment_datetime
+        
+        # Cancel the booking
         success = booking.cancel(cancelled_by=request.user, reason='Customer cancelled')
         
         if success:
-            messages.success(request, f'Booking cancelled for {booking.service_type.name}.')
+            # ✅ SEND CANCELLATION EMAIL
+            try:
+                email_sent = send_appointment_cancellation_email(
+                    appointment=booking,
+                    recipient_email=request.user.email
+                )
+                
+                if email_sent:
+                    messages.success(request, 
+                        f'Booking cancelled for {service_name}. '
+                        f'Cancellation confirmation sent to {request.user.email}.')
+                else:
+                    messages.success(request, 
+                        f'Booking cancelled for {service_name}. '
+                        f'(Email notification failed)')
+            except Exception as e:
+                print(f"Cancellation email error: {e}")
+                messages.success(request, f'Booking cancelled for {service_name}.')
         else:
             messages.error(request, 'Unable to cancel.')
     
