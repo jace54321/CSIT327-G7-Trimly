@@ -19,6 +19,11 @@ from django.db.models import Q, F, ExpressionWrapper, DateTimeField, DurationFie
 from django.template.loader import render_to_string
 import pytz
 
+#----ADMIN IMPORTS---------
+from django.contrib.admin.views.decorators import staff_member_required
+from django.db.models import Q, Sum, Count, Avg
+from .models import Reservation, Barber, Customer, ServiceType
+from django.core.paginator import Paginator
 
 # -------------------------------
 # View to display the landing page
@@ -186,6 +191,8 @@ def login_view(request):
                 return redirect("barber_dashboard")
             elif hasattr(user, "customer_profile"):
                 return redirect("customer_dashboard")
+            elif user.is_staff or user.is_superuser:
+                return redirect("admin_dashboard")
             else:
                 return redirect("landing")
         
@@ -1085,3 +1092,518 @@ def validate_phone_number(phone_number):
         )
     
     return clean_phone
+
+
+
+
+
+#-------------------------
+#--ADMIN FUNCTIONALITIES--
+#-------------------------
+
+@login_required(login_url='auth')
+@staff_member_required(login_url='landing')
+def admin_dashboard_view(request):
+    
+    # --- Get Main Stats ---
+    total_bookings = Reservation.objects.count()
+    total_customers = Customer.objects.count()
+    total_barbers = Barber.objects.count()
+    total_revenue_data = Reservation.objects.filter(status='completed').aggregate(
+        total_revenue=Sum('price')
+    )
+    total_revenue = total_revenue_data.get('total_revenue') or 0.00
+    
+    # --- Get Barbers (for management & filters) ---
+    all_barbers = Barber.objects.all().select_related('user').order_by('user__first_name')
+    all_services = ServiceType.objects.all().order_by('name')
+
+    # ==================================================
+    # BOOKING FILTERING & PAGINATION
+    # ==================================================
+    bookings_list = Reservation.objects.all().select_related(
+        'customer__user', 'barber__user', 'service_type'
+    ).order_by('-appointment_datetime')
+
+    filter_barber = request.GET.get('barber', '')
+    filter_status = request.GET.get('status', '')
+    filter_start_date = request.GET.get('start_date', '')
+    filter_end_date = request.GET.get('end_date', '')
+
+   # Apply filters
+    if filter_barber:
+        bookings_list = bookings_list.filter(barber_id=filter_barber)
+    if filter_status:
+        bookings_list = bookings_list.filter(status=filter_status)
+    
+    
+    # Only try to convert dates if the strings are not empty
+    try:
+        if filter_start_date:
+            start_date_obj = datetime.strptime(filter_start_date, '%Y-%m-%d').date()
+            bookings_list = bookings_list.filter(appointment_datetime__gte=start_date_obj)
+            
+        if filter_end_date:
+            end_date_obj = datetime.strptime(filter_end_date, '%Y-%m-%d').date()
+            end_date_inclusive = end_date_obj + timedelta(days=1) 
+            bookings_list = bookings_list.filter(appointment_datetime__lt=end_date_inclusive)
+    except ValueError:
+        messages.error(request, "Invalid date format. Please use YYYY-MM-DD.")
+    
+
+    paginator = Paginator(bookings_list, 10) # 10 bookings per page
+    page_number = request.GET.get('page') # Uses 'page' query param
+    bookings_page = paginator.get_page(page_number)
+    
+    status_choices = Reservation.STATUS_CHOICES
+    
+    # ==================================================
+    # CUSTOMER FILTERING & PAGINATION
+    # ==================================================
+    customer_list = Customer.objects.all().select_related('user').order_by('user__first_name')
+    
+    filter_customer_name = request.GET.get('customer_name', '')
+    
+    if filter_customer_name:
+        # Filter by first name, last name, or username
+        customer_list = customer_list.filter(
+            Q(user__first_name__icontains=filter_customer_name) |
+            Q(user__last_name__icontains=filter_customer_name) |
+            Q(user__username__icontains=filter_customer_name)
+        )
+
+    customer_paginator = Paginator(customer_list, 10) # 10 customers per page
+    customer_page_number = request.GET.get('c_page') # Uses 'c_page' query param
+    customers_page = customer_paginator.get_page(customer_page_number)
+    
+    # Pass current filter values back to the template
+    filter_params = {
+        'barber': filter_barber,
+        'status': filter_status,
+        'start_date': filter_start_date,
+        'end_date': filter_end_date,
+        'customer_name': filter_customer_name, # Added new filter
+    }
+
+    context = {
+        'total_bookings': total_bookings,
+        'total_customers': total_customers,
+        'total_barbers': total_barbers,
+        'total_revenue': total_revenue,
+        
+        'bookings_page': bookings_page,
+        'all_barbers': all_barbers,
+        'status_choices': status_choices,
+        
+        'customers_page': customers_page,
+
+        'all_services': all_services,
+
+        'filter_params': filter_params,
+    }
+    return render(request, "admin_dashboard.html", context)
+
+# -------------------------------
+# ADMIN DASHBOARD - CRUD VIEWS
+# -------------------------------
+
+# -------------------------------
+# CUSTOMER CRUD VIEW
+# -------------------------------
+
+@staff_member_required(login_url='landing')
+def admin_create_customer_view(request):
+    if request.method == "POST":
+        username = request.POST.get("username").strip()
+        email = request.POST.get("email").strip()
+        first_name = request.POST.get("first_name").strip()
+        last_name = request.POST.get("last_name").strip()
+        phone_number = request.POST.get("phone_number").strip()
+        password = request.POST.get("password")
+
+        try:
+            # Validations
+            if not all([username, email, first_name, last_name, phone_number, password]):
+                messages.error(request, "All fields are required.")
+                return redirect('admin_dashboard')
+
+            if User.objects.filter(username=username).exists():
+                messages.error(request, "Username already taken.")
+                return redirect('admin_dashboard')
+            
+            if User.objects.filter(email=email).exists():
+                messages.error(request, "Email already in use.")
+                return redirect('admin_dashboard')
+
+            clean_phone = validate_phone_number(phone_number)
+            if Customer.objects.filter(phone_number=clean_phone).exists():
+                messages.error(request, "Phone number already in use.")
+                return redirect('admin_dashboard')
+
+            validate_password(password) # Check password strength
+
+            # Create User
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                first_name=first_name,
+                last_name=last_name
+            )
+            # Create Customer Profile
+            Customer.objects.create(user=user, phone_number=clean_phone)
+            messages.success(request, f"Customer '{username}' created successfully.")
+
+        except ValidationError as e:
+            messages.error(request, f"Validation Error: {'. '.join(e.messages)}")
+        except Exception as e:
+            messages.error(request, f"An error occurred: {str(e)}")
+    
+    return redirect('admin_dashboard')
+
+
+@staff_member_required(login_url='landing')
+def admin_edit_customer_view(request, user_id):
+    if request.method == "POST":
+        try:
+            user = get_object_or_404(User, id=user_id)
+            customer = get_object_or_404(Customer, user=user)
+            
+            email = request.POST.get("email").strip()
+            first_name = request.POST.get("first_name").strip()
+            last_name = request.POST.get("last_name").strip()
+            phone_number = request.POST.get("phone_number").strip()
+            
+            # Validation
+            if not all([email, first_name, last_name, phone_number]):
+                messages.error(request, "All fields are required.")
+                return redirect('admin_dashboard')
+
+            # Check if email is being changed to one that already exists
+            if email != user.email and User.objects.filter(email=email).exists():
+                messages.error(request, "Email already in use.")
+                return redirect('admin_dashboard')
+            
+            clean_phone = validate_phone_number(phone_number)
+            # Check if phone is being changed to one that already exists
+            if clean_phone != customer.phone_number and Customer.objects.filter(phone_number=clean_phone).exists():
+                messages.error(request, "Phone number already in use.")
+                return redirect('admin_dashboard')
+
+            # Update User
+            user.email = email
+            user.first_name = first_name
+            user.last_name = last_name
+            user.save()
+            
+            # Update Customer Profile
+            customer.phone_number = clean_phone
+            customer.save()
+            
+            messages.success(request, f"Customer '{user.username}' updated successfully.")
+
+        except ValidationError as e:
+            messages.error(request, f"Validation Error: {'. '.join(e.messages)}")
+        except Exception as e:
+            messages.error(request, f"An error occurred: {str(e)}")
+            
+    return redirect('admin_dashboard')
+
+
+@staff_member_required(login_url='landing')
+def admin_delete_customer_view(request, user_id):
+    if request.method == "POST":
+        try:
+            user = get_object_or_404(User, id=user_id)
+            username = user.username
+            
+            # Deleting the User will cascade and delete the Customer profile
+            user.delete()
+            messages.success(request, f"Customer '{username}' has been deleted.")
+        
+        except Exception as e:
+            messages.error(request, f"An error occurred: {str(e)}")
+            
+    return redirect('admin_dashboard')
+
+
+
+# -------------------------------
+# BARBER CRUD VIEW
+# -------------------------------
+
+@staff_member_required(login_url='landing')
+def admin_create_barber_view(request):
+    if request.method == "POST":
+        username = request.POST.get("username").strip()
+        email = request.POST.get("email").strip()
+        first_name = request.POST.get("first_name").strip()
+        last_name = request.POST.get("last_name").strip()
+        phone_number = request.POST.get("phone_number").strip()
+        password = request.POST.get("password")
+
+        try:
+            # Validations
+            if not all([username, email, first_name, last_name, phone_number, password]):
+                messages.error(request, "All fields are required.")
+                return redirect('admin_dashboard')
+
+            if User.objects.filter(username=username).exists():
+                messages.error(request, "Username already taken.")
+                return redirect('admin_dashboard')
+            
+            if User.objects.filter(email=email).exists():
+                messages.error(request, "Email already in use.")
+                return redirect('admin_dashboard')
+
+            clean_phone = validate_phone_number(phone_number)
+            if Barber.objects.filter(phone_number=clean_phone).exists():
+                messages.error(request, "Phone number already in use.")
+                return redirect('admin_dashboard')
+
+            validate_password(password) # Check password strength
+
+            # Create User
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                first_name=first_name,
+                last_name=last_name
+            )
+            # Create Barber Profile
+            Barber.objects.create(user=user, phone_number=clean_phone)
+            messages.success(request, f"Barber '{username}' created successfully.")
+
+        except ValidationError as e:
+            messages.error(request, f"Validation Error: {'. '.join(e.messages)}")
+        except Exception as e:
+            messages.error(request, f"An error occurred: {str(e)}")
+    
+    return redirect('admin_dashboard')
+
+
+@staff_member_required(login_url='landing')
+def admin_edit_barber_view(request, user_id):
+    if request.method == "POST":
+        try:
+            user = get_object_or_404(User, id=user_id)
+            barber = get_object_or_404(Barber, user=user)
+            
+            email = request.POST.get("email").strip()
+            first_name = request.POST.get("first_name").strip()
+            last_name = request.POST.get("last_name").strip()
+            phone_number = request.POST.get("phone_number").strip()
+            
+            # Validation
+            if not all([email, first_name, last_name, phone_number]):
+                messages.error(request, "All fields are required.")
+                return redirect('admin_dashboard')
+
+            if email != user.email and User.objects.filter(email=email).exists():
+                messages.error(request, "Email already in use.")
+                return redirect('admin_dashboard')
+            
+            clean_phone = validate_phone_number(phone_number)
+            if clean_phone != barber.phone_number and Barber.objects.filter(phone_number=clean_phone).exists():
+                messages.error(request, "Phone number already in use.")
+                return redirect('admin_dashboard')
+
+            # Update User
+            user.email = email
+            user.first_name = first_name
+            user.last_name = last_name
+            user.save()
+            
+            # Update Barber Profile
+            barber.phone_number = clean_phone
+            barber.save()
+            
+            messages.success(request, f"Barber '{user.username}' updated successfully.")
+
+        except ValidationError as e:
+            messages.error(request, f"Validation Error: {'. '.join(e.messages)}")
+        except Exception as e:
+            messages.error(request, f"An error occurred: {str(e)}")
+            
+    return redirect('admin_dashboard')
+
+
+@staff_member_required(login_url='landing')
+def admin_delete_barber_view(request, user_id):
+    if request.method == "POST":
+        try:
+            user = get_object_or_404(User, id=user_id)
+            username = user.username
+            
+            # Deleting the User will cascade and delete the Barber profile
+            user.delete()
+            messages.success(request, f"Barber '{username}' has been deleted.")
+        
+        except Exception as e:
+            messages.error(request, f"An error occurred: {str(e)}")
+            
+    return redirect('admin_dashboard')
+
+
+# -------------------------------
+# SERVICE CRUD VIEW
+# -------------------------------
+
+@staff_member_required(login_url='landing')
+def admin_create_service_view(request):
+    if request.method == "POST":
+        try:
+            name = request.POST.get("name").strip()
+            price = request.POST.get("price")
+            duration = request.POST.get("duration")
+            description = request.POST.get("description", "").strip()
+
+            if not all([name, price, duration]):
+                messages.error(request, "Name, Price, and Duration are required.")
+                return redirect('admin_dashboard')
+
+            ServiceType.objects.create(
+                name=name,
+                price=price,
+                duration=duration,
+                description=description
+            )
+            messages.success(request, f"Service '{name}' created successfully.")
+
+        except Exception as e:
+            messages.error(request, f"An error occurred: {str(e)}")
+    
+    return redirect('admin_dashboard')
+
+
+@staff_member_required(login_url='landing')
+def admin_edit_service_view(request, service_id):
+    if request.method == "POST":
+        try:
+            service = get_object_or_404(ServiceType, id=service_id)
+            
+            name = request.POST.get("name").strip()
+            price = request.POST.get("price")
+            duration = request.POST.get("duration")
+            description = request.POST.get("description", "").strip()
+
+            if not all([name, price, duration]):
+                messages.error(request, "Name, Price, and Duration are required.")
+                return redirect('admin_dashboard')
+
+            service.name = name
+            service.price = price
+            service.duration = duration
+            service.description = description
+            service.save()
+            
+            messages.success(request, f"Service '{name}' updated successfully.")
+
+        except Exception as e:
+            messages.error(request, f"An error occurred: {str(e)}")
+            
+    return redirect('admin_dashboard')
+
+
+@staff_member_required(login_url='landing')
+def admin_delete_service_view(request, service_id):
+    if request.method == "POST":
+        try:
+            service = get_object_or_404(ServiceType, id=service_id)
+            name = service.name
+            
+            # Check if service is tied to any bookings
+            if service.reservations.exists():
+                messages.error(request, f"Cannot delete '{name}' as it is tied to existing bookings. You can disable it by editing it instead.")
+                return redirect('admin_dashboard')
+                
+            service.delete()
+            messages.success(request, f"Service '{name}' has been deleted.")
+        
+        except Exception as e:
+            messages.error(request, f"An error occurred: {str(e)}")
+            
+    return redirect('admin_dashboard')
+
+@staff_member_required(login_url='landing')
+def admin_update_booking_status(request, booking_id):
+    """
+    Allow Admin to update the status of any booking.
+    """
+    if request.method != 'POST':
+        return redirect('admin_dashboard')
+
+    try:
+        booking = get_object_or_404(Reservation, id=booking_id)
+        new_status = request.POST.get('status')
+
+        # Define all allowed transitions
+        allowed_statuses = [choice[0] for choice in Reservation.STATUS_CHOICES]
+        
+        if new_status not in allowed_statuses:
+            messages.error(request, "Invalid status.")
+            return redirect('admin_dashboard')
+
+        # Update status
+        booking.status = new_status
+        
+        if new_status == 'cancelled':
+            booking.cancellation_reason = "Cancelled by Admin."
+            booking.cancelled_at = timezone.now()
+            booking.cancelled_by = request.user
+            messages.success(request, f"Booking #{booking.id} has been cancelled.")
+            
+        elif new_status == 'confirmed':
+            messages.success(request, f"Booking #{booking.id} has been confirmed.")
+
+        elif new_status == 'completed':
+            messages.success(request, f"Booking #{booking.id} has been marked as completed.")
+        
+        else:
+            messages.success(request, f"Booking #{booking.id} status updated to '{new_status}'.")
+
+        booking.save()
+    
+    except Exception as e:
+        messages.error(request, f"An error occurred: {str(e)}")
+    
+    return redirect('admin_dashboard')
+
+@staff_member_required(login_url='landing')
+def admin_reset_password_view(request, user_id):
+    """
+    Allow Admin to reset a user's password.
+    """
+    if request.method != 'POST':
+        return redirect('admin_dashboard')
+
+    try:
+        user = get_object_or_404(User, id=user_id)
+        new_password = request.POST.get("new_password")
+        confirm_password = request.POST.get("confirm_password")
+
+        if not all([new_password, confirm_password]):
+            messages.error(request, "Both password fields are required.")
+            return redirect('admin_dashboard')
+
+        if new_password != confirm_password:
+            messages.error(request, "Passwords do not match.")
+            return redirect('admin_dashboard')
+        
+        # Use Django's built-in password validator
+        validate_password(new_password, user=user)
+        
+        # Set and hash the new password
+        user.set_password(new_password)
+        user.save()
+        
+        messages.success(request, f"Password for '{user.username}' has been reset successfully.")
+
+    except ValidationError as e:
+        # e.messages is a list, so join them
+        messages.error(request, f"Validation Error: {'. '.join(e.messages)}")
+    except Exception as e:
+        messages.error(request, f"An error occurred: {str(e)}")
+            
+    return redirect('admin_dashboard')

@@ -54,4 +54,20 @@ urlpatterns = [
     path("bookings/<int:booking_id>/update-status/", views.update_booking_status, name="update_booking_status"),
     path("bookings/<int:booking_id>/rate/", views.submit_rating_view, name="submit_rating"),
     path('api/get-slots/<int:barber_id>/<str:date_str>/', views.get_available_slots_api, name='get_available_slots_api'),
+
+
+
+    #-------ADMIN URL-------
+    path('admin-dashboard/', views.admin_dashboard_view, name='admin_dashboard'),
+    path('admin-dashboard/customer/create/', views.admin_create_customer_view, name='admin_create_customer'),
+    path('admin-dashboard/customer/edit/<int:user_id>/', views.admin_edit_customer_view, name='admin_edit_customer'),
+    path('admin-dashboard/customer/delete/<int:user_id>/', views.admin_delete_customer_view, name='admin_delete_customer'),
+    path('admin-dashboard/barber/create/', views.admin_create_barber_view, name='admin_create_barber'),
+    path('admin-dashboard/barber/edit/<int:user_id>/', views.admin_edit_barber_view, name='admin_edit_barber'),
+    path('admin-dashboard/barber/delete/<int:user_id>/', views.admin_delete_barber_view, name='admin_delete_barber'),
+    path('admin-dashboard/service/create/', views.admin_create_service_view, name='admin_create_service'),
+    path('admin-dashboard/service/edit/<int:service_id>/', views.admin_edit_service_view, name='admin_edit_service'),
+    path('admin-dashboard/service/delete/<int:service_id>/', views.admin_delete_service_view, name='admin_delete_service'),
+    path('admin-dashboard/booking/update/<int:booking_id>/', views.admin_update_booking_status, name='admin_update_booking_status'),
+    path('admin-dashboard/user/reset-password/<int:user_id>/', views.admin_reset_password_view, name='admin_reset_password'),
 ]
