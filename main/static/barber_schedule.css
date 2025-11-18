@@ -2,425 +2,637 @@
    BARBER SCHEDULE PAGE - Glassmorphism Design
    ============================================================================ */
 
-   body {
-    /* Ensures the dark background from base.css is visible */
-    color: var(--text-on-dark);
-  }
+body {
+  /* Ensures the dark background from base.css is visible */
+  color: var(--text-on-dark);
+}
+
+/* --- Main Layout --- */
+.schedule-container {
+  max-width: 1200px;
+  margin: var(--spacing-lg) auto;
+  padding: 0 var(--spacing-md);
+}
+
+.schedule-header {
+  margin-bottom: var(--spacing-lg);
+}
+
+.schedule-header h2 {
+  font-family: "Playfair Display", serif;
+  font-size: 36px;
+  font-weight: 900;
+  color: #fff;
+  margin-bottom: var(--spacing-xs);
+}
+
+.schedule-header p {
+  font-size: 16px;
+  color: var(--muted-on-dark);
+}
+
+/* --- Grid --- */
+.schedule-grid {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: var(--spacing-lg);
+}
+
+/* --- Glass Card --- */
+.glass-card {
+  background: var(--glass-bg-dark);
+  border: 1.2px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+}
+
+.glass-card h3 {
+  font-family: "Playfair Display", serif;
+  font-size: 24px;
+  font-weight: 800;
+  color: #fff;
+  padding-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.glass-card h3 i {
+  color: var(--accent);
+}
+
+/* --- Form Card --- */
+.form-group {
+  margin-bottom: var(--spacing-md);
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  color: var(--muted-on-dark);
+  margin-bottom: var(--spacing-xs);
+  font-size: 14px;
+}
+
+.form-group input[type="date"],
+.form-group input[type="time"] {
+  width: 100%;
+  font-size: 15px;
+  padding: 12px 14px;
+}
+
+/* We need to define .btn-primary as it's not in base.css */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  padding: 13px 20px;
+  border: 1.2px solid transparent;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 15px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  white-space: nowrap;
+  width: 100%;
   
-  /* --- Main Layout --- */
-  .schedule-container {
-    max-width: 1200px;
-    margin: var(--spacing-lg) auto;
-    padding: 0 var(--spacing-md);
-  }
-  
-  .schedule-header {
-    margin-bottom: var(--spacing-lg);
-  }
-  
-  .schedule-header h2 {
-    font-family: "Playfair Display", serif;
-    font-size: 36px;
-    font-weight: 900;
-    color: #fff;
-    margin-bottom: var(--spacing-xs);
-  }
-  
-  .schedule-header p {
-    font-size: 16px;
-    color: var(--muted-on-dark);
-  }
-  
-  /* --- Grid --- */
+  /* Style based on btn-light from base.css */
+  background: var(--accent);
+  color: #1b120a;
+  box-shadow: 0 4px 12px rgba(243, 211, 124, .25);
+  border-color: rgba(255, 232, 180, .4);
+}
+
+.btn-primary:hover {
+  background: #ffe4a1;
+  box-shadow: 0 8px 20px rgba(243, 211, 124, .4);
+  transform: translateY(-2px);
+}
+
+/* --- List Card --- */
+.schedule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.schedule-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm) 0;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.schedule-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.schedule-item:first-child {
+  padding-top: 0;
+}
+
+.schedule-item-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.schedule-item-info strong {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-on-dark);
+}
+
+.schedule-item-info span {
+  font-size: 14px;
+  color: var(--muted-on-dark);
+}
+
+.btn-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1.2px solid var(--danger);
+  color: var(--danger);
+  background: transparent;
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.btn-delete:hover {
+  background: rgba(207, 45, 45, 0.1);
+  border-color: #f15858;
+  color: #f15858;
+  transform: translateY(-1px);
+}
+
+/* --- Empty State --- */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-lg) 0;
+  text-align: center;
+  color: var(--muted-on-dark);
+}
+
+.empty-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--glass-bg-light);
+  border: 1px solid var(--glass-border);
+  color: var(--accent);
+  font-size: 24px;
+  margin-bottom: var(--spacing-md);
+}
+
+.empty-state h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-on-dark);
+  margin-bottom: var(--spacing-xs);
+}
+
+.empty-state p {
+  font-size: 14px;
+  max-width: 250px;
+  margin: 0;
+}
+
+/* --- Flash Messages --- */
+.messages-container {
+  max-width: 1200px;
+  margin: 0 auto var(--spacing-md) auto;
+}
+
+.alert {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  margin-bottom: var(--spacing-sm);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+.alert-success {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #4ade80;
+}
+
+.alert i {
+  font-size: 18px;
+}
+
+.close-alert {
+  margin-left: auto;
+  color: inherit;
+  text-decoration: none;
+  font-size: 20px;
+  opacity: 0.7;
+  transition: opacity var(--transition-base);
+}
+.close-alert:hover {
+  opacity: 1;
+  color: inherit;
+}
+
+/* --- Modal --- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 1;
+}
+
+.modal-content {
+  background: #1c1c21;
+  border: 1.2px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  width: 100%;
+  max-width: 500px;
+  color: var(--text-on-dark);
+}
+
+.modal-header {
+  padding: var(--spacing-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.modal-header h3 {
+  font-family: "Playfair Display", serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-header h3 i {
+  color: var(--danger);
+}
+
+.close-modal-btn {
+  background: var(--glass-bg-light);
+  border: 1px solid var(--glass-border);
+  color: var(--muted-on-dark);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: all var(--transition-base);
+}
+
+.close-modal-btn:hover {
+  background: var(--glass-bg-medium);
+  color: #fff;
+}
+
+.modal-body {
+  padding: var(--spacing-md);
+}
+
+.modal-body p {
+  font-size: 16px;
+  color: var(--muted-on-dark);
+  line-height: 1.6;
+  margin: 0 0 var(--spacing-md) 0;
+}
+
+.modal-summary-box {
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+}
+
+.modal-summary-box p {
+  margin: 0;
+  color: #f87171;
+  font-size: 15px;
+}
+.modal-summary-box p strong {
+  color: #fff;
+}
+
+.modal-footer {
+  padding: var(--spacing-md);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  background: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid var(--glass-border);
+  border-bottom-left-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-lg);
+}
+
+/* Modal Buttons with proper spacing */
+.btn-secondary, .btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border: 1.2px solid transparent;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  white-space: nowrap;
+  min-width: 110px;
+}
+
+.btn-secondary {
+  background: var(--glass-bg-light);
+  border-color: var(--glass-border);
+  color: var(--muted-on-dark);
+}
+.btn-secondary:hover {
+  background: var(--glass-bg-medium);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.btn-danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+.btn-danger:hover {
+  background: #e04444;
+  border-color: #e04444;
+  transform: translateY(-1px);
+}
+.btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Accept button (success variant) */
+.btn-success {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border: 1.2px solid transparent;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  white-space: nowrap;
+  min-width: 110px;
+  background: #22c55e;
+  border-color: #22c55e;
+  color: #fff;
+}
+
+.btn-success:hover {
+  background: #16a34a;
+  border-color: #16a34a;
+  transform: translateY(-1px);
+}
+
+.btn-success:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ============================================================================
+   TODAY'S SCHEDULE SECTION - FIXED SIZE AND ALIGNMENT
+   ============================================================================ */
+
+.today-schedule-section {
+  margin-bottom: var(--spacing-xl);
+}
+
+.today-schedule-section .glass-card {
+  max-width: 100%;
+}
+
+.today-schedule-section h3 {
+  font-size: 32px;
+  margin-bottom: var(--spacing-lg);
+}
+
+/* Appointment card with proper flexbox layout */
+.appointment-card {
+  background: var(--glass-bg-light);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-lg);
+  transition: all var(--transition-base);
+}
+
+.appointment-card:hover {
+  background: var(--glass-bg-medium);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.appointment-card:last-child {
+  margin-bottom: 0;
+}
+
+/* Time - Left aligned, fixed width */
+.appointment-time {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  min-width: 100px;
+  flex-shrink: 0;
+}
+
+/* Info section - Service and customer */
+.appointment-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.appointment-service {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-on-dark);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.appointment-customer {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.65);
+  margin: 0;
+  line-height: 1.3;
+}
+
+/* Actions - Right aligned */
+.appointment-actions {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+/* No Show button with better sizing */
+.btn-noshow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: 1.2px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  white-space: nowrap;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.btn-noshow:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+/* Button group for accept/reject actions */
+.appointment-actions .btn-success,
+.appointment-actions .btn-danger {
+  min-width: 100px;
+  padding: 10px 18px;
+}
+
+/* For inline button groups (2 buttons side by side) */
+.button-group {
+  display: flex;
+  gap: 10px;
+}
+
+.button-group .btn-success,
+.button-group .btn-danger {
+  flex: 1;
+  min-width: 100px;
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+@media (max-width: 768px) {
   .schedule-grid {
-    display: grid;
-    grid-template-columns: 380px 1fr;
-    gap: var(--spacing-lg);
+    grid-template-columns: 1fr;
   }
   
-  /* --- Glass Card --- */
+  .list-card {
+    /* Move the list to the top on mobile */
+    order: -1;
+  }
+
+  .schedule-container {
+    margin: var(--spacing-md) auto;
+    padding: 0 var(--spacing-sm);
+  }
+
   .glass-card {
-    background: var(--glass-bg-dark);
-    border: 1.2px solid var(--glass-border);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-lg);
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
-  }
-  
-  .glass-card h3 {
-    font-family: "Playfair Display", serif;
-    font-size: 24px;
-    font-weight: 800;
-    color: #fff;
-    padding-bottom: var(--spacing-sm);
-    margin-bottom: var(--spacing-md);
-    border-bottom: 1px solid var(--glass-border);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  
-  .glass-card h3 i {
-    color: var(--accent);
-  }
-  
-  /* --- Form Card --- */
-  .form-group {
-    margin-bottom: var(--spacing-md);
-  }
-  
-  .form-group label {
-    display: block;
-    font-weight: 600;
-    color: var(--muted-on-dark);
-    margin-bottom: var(--spacing-xs);
-    font-size: 14px;
-  }
-  
-  .form-group input[type="date"],
-  .form-group input[type="time"] {
-    width: 100%;
-    font-size: 15px;
-    padding: 12px 14px;
-  }
-  
-  /* We need to define .btn-primary as it's not in base.css */
-  .btn-primary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--spacing-xs);
-    padding: 13px 20px;
-    border: 1.2px solid transparent;
-    border-radius: var(--radius-md);
-    font-weight: 600;
-    font-size: 15px;
-    text-decoration: none;
-    cursor: pointer;
-    transition: all var(--transition-base);
-    white-space: nowrap;
-    width: 100%;
-    
-    /* Style based on btn-light from base.css */
-    background: var(--accent);
-    color: #1b120a;
-    box-shadow: 0 4px 12px rgba(243, 211, 124, .25);
-    border-color: rgba(255, 232, 180, .4);
-  }
-  
-  .btn-primary:hover {
-    background: #ffe4a1;
-    box-shadow: 0 8px 20px rgba(243, 211, 124, .4);
-    transform: translateY(-2px);
-  }
-  
-  /* --- List Card --- */
-  .schedule-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-  }
-  
-  .schedule-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--spacing-sm) 0;
-    border-bottom: 1px solid var(--glass-border);
-  }
-  
-  .schedule-item:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-  }
-  .schedule-item:first-child {
-    padding-top: 0;
-  }
-  
-  .schedule-item-info {
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .schedule-item-info strong {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--text-on-dark);
-  }
-  
-  .schedule-item-info span {
-    font-size: 14px;
-    color: var(--muted-on-dark);
-  }
-  
-  .btn-delete {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border: 1.2px solid var(--danger);
-    color: var(--danger);
-    background: transparent;
-    border-radius: var(--radius-md);
-    font-size: 16px;
-    cursor: pointer;
-    transition: all var(--transition-base);
-  }
-  
-  .btn-delete:hover {
-    background: rgba(207, 45, 45, 0.1);
-    border-color: #f15858;
-    color: #f15858;
-    transform: translateY(-1px);
-  }
-  
-  /* --- Empty State --- */
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: var(--spacing-lg) 0;
-    text-align: center;
-    color: var(--muted-on-dark);
-  }
-  
-  .empty-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    display: grid;
-    place-items: center;
-    background: var(--glass-bg-light);
-    border: 1px solid var(--glass-border);
-    color: var(--accent);
-    font-size: 24px;
-    margin-bottom: var(--spacing-md);
-  }
-  
-  .empty-state h3 {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--text-on-dark);
-    margin-bottom: var(--spacing-xs);
-  }
-  
-  .empty-state p {
-    font-size: 14px;
-    max-width: 250px;
-    margin: 0;
-  }
-  
-  /* --- Flash Messages --- */
-  .messages-container {
-    max-width: 1200px;
-    margin: 0 auto var(--spacing-md) auto;
-  }
-  
-  .alert {
-    padding: var(--spacing-sm) var(--spacing-md);
-    border-radius: var(--radius-md);
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 15px;
-    margin-bottom: var(--spacing-sm);
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    color: #f87171;
-  }
-  
-  .alert-success {
-    background: rgba(34, 197, 94, 0.1);
-    border-color: rgba(34, 197, 94, 0.3);
-    color: #4ade80;
-  }
-  
-  .alert i {
-    font-size: 18px;
-  }
-  
-  .close-alert {
-    margin-left: auto;
-    color: inherit;
-    text-decoration: none;
-    font-size: 20px;
-    opacity: 0.7;
-    transition: opacity var(--transition-base);
-  }
-  .close-alert:hover {
-    opacity: 1;
-    color: inherit;
-  }
-  
-  
-  /* --- Modal --- */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    opacity: 1;
-  }
-  
-  .modal-content {
-    background: #1c1c21;
-    border: 1.2px solid var(--glass-border);
-    border-radius: var(--radius-lg);
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-    width: 100%;
-    max-width: 500px;
-    color: var(--text-on-dark);
-  }
-  
-  .modal-header {
-    padding: var(--spacing-md);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--glass-border);
-  }
-  
-  .modal-header h3 {
-    font-family: "Playfair Display", serif;
-    font-size: 22px;
-    font-weight: 800;
-    color: #fff;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  
-  .modal-header h3 i {
-    color: var(--danger);
-  }
-  
-  .close-modal-btn {
-    background: var(--glass-bg-light);
-    border: 1px solid var(--glass-border);
-    color: var(--muted-on-dark);
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    cursor: pointer;
-    display: grid;
-    place-items: center;
-    transition: all var(--transition-base);
-  }
-  
-  .close-modal-btn:hover {
-    background: var(--glass-bg-medium);
-    color: #fff;
-  }
-  
-  .modal-body {
     padding: var(--spacing-md);
   }
-  
-  .modal-body p {
-    font-size: 16px;
-    color: var(--muted-on-dark);
-    line-height: 1.6;
-    margin: 0 0 var(--spacing-md) 0;
-  }
-  
-  .modal-summary-box {
-    background: rgba(239, 68, 68, 0.05);
-    border: 1px solid rgba(239, 68, 68, 0.2);
-    padding: var(--spacing-sm) var(--spacing-md);
-    border-radius: var(--radius-md);
-  }
-  
-  .modal-summary-box p {
-    margin: 0;
-    color: #f87171;
-    font-size: 15px;
-  }
-  .modal-summary-box p strong {
-    color: #fff;
-  }
-  
-  
-  .modal-footer {
-    padding: var(--spacing-md);
-    display: flex;
-    justify-content: flex-end;
+
+  /* Mobile appointment cards */
+  .appointment-card {
+    flex-direction: column;
+    align-items: flex-start;
     gap: var(--spacing-sm);
-    background: rgba(0, 0, 0, 0.2);
-    border-top: 1px solid var(--glass-border);
-    border-bottom-left-radius: var(--radius-lg);
-    border-bottom-right-radius: var(--radius-lg);
   }
-  
-  /* Modal Buttons */
-  .btn-secondary, .btn-danger {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--spacing-xs);
-    padding: 11px 20px;
-    border: 1.2px solid transparent;
-    border-radius: var(--radius-md);
-    font-weight: 600;
-    font-size: 15px;
-    text-decoration: none;
-    cursor: pointer;
-    transition: all var(--transition-base);
-    white-space: nowrap;
+
+  .appointment-time {
+    min-width: auto;
+    font-size: 18px;
   }
-  
-  .btn-secondary {
-    background: var(--glass-bg-light);
-    border-color: var(--glass-border);
-    color: var(--muted-on-dark);
+
+  .appointment-info {
+    width: 100%;
   }
-  .btn-secondary:hover {
-    background: var(--glass-bg-medium);
-    border-color: rgba(255, 255, 255, 0.3);
-    color: #fff;
+
+  .appointment-service {
+    font-size: 16px;
   }
-  
-  .btn-danger {
-    background: var(--danger);
-    border-color: var(--danger);
-    color: #fff;
+
+  .appointment-customer {
+    font-size: 14px;
   }
-  .btn-danger:hover {
-    background: #e04444;
-    border-color: #e04444;
+
+  .appointment-actions {
+    width: 100%;
   }
-  .btn-danger:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+
+  .appointment-actions .btn-noshow,
+  .appointment-actions .btn-success,
+  .appointment-actions .btn-danger {
+    width: 100%;
   }
-  
-  
-  /* --- Responsive --- */
-  @media (max-width: 768px) {
-    .schedule-grid {
-      grid-template-columns: 1fr;
-    }
-    
-    .list-card {
-      /* Move the list to the top on mobile */
-      order: -1;
-    }
-  
-    .schedule-container {
-      margin: var(--spacing-md) auto;
-      padding: 0 var(--spacing-sm);
-    }
-  
-    .glass-card {
-      padding: var(--spacing-md);
-    }
+
+  .button-group {
+    flex-direction: column;
+    width: 100%;
   }
+
+  .button-group .btn-success,
+  .button-group .btn-danger {
+    width: 100%;
+  }
+
+  /* Smaller heading on mobile */
+  .today-schedule-section h3 {
+    font-size: 26px;
+  }
+}

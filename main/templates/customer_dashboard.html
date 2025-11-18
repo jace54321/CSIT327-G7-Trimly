@@ -151,7 +151,7 @@
                                 <h3><i class="fas fa-user-tie"></i> Select Barber</h3>
                                 <div class="barber-grid">
                                     {% for barber in barbers %}
-                                        <div class="barber-card" onclick="selectBarber({{ barber.id }}, '{{ barber.get_full_name|escapejs }}')"> <!-- Added escapejs -->
+                                        <div class="barber-card" onclick="selectBarber({{ barber.id }}, '{{ barber.get_full_name|escapejs }}')">
                                             <div class="barber-avatar">
                                                 <i class="fas fa-user"></i>
                                             </div>
@@ -305,9 +305,9 @@
                                         <span>{{ booking.appointment_datetime|date:"g:i A" }} ({{ booking.duration }} min)</span>
                                     </div>
                                     
-                                    {# Hint text #}
+                                    {# FIXED: Added barberId and duration parameters #}
                                     <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.08); color: #9aa3b5; font-size: 13px; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.2s;" 
-                                        onclick="viewBookingDetails({{ booking.id }}, '{{ booking.service_type.name|escapejs }}', '{{ booking.barber.get_full_name|escapejs }}', '{{ booking.appointment_datetime|date:'F d, Y' }}', '{{ booking.appointment_datetime|date:'g:i A' }}', {{ booking.duration }}, {{ booking.price }}, '{{ booking.status }}', '{{ booking.get_status_display|escapejs }}', '{{ booking.service_description|default:''|escapejs }}', true)"
+                                        onclick="viewBookingDetails({{ booking.id }}, '{{ booking.service_type.name|escapejs }}', '{{ booking.barber.get_full_name|escapejs }}', '{{ booking.appointment_datetime|date:'F d, Y' }}', '{{ booking.appointment_datetime|date:'g:i A' }}', {{ booking.duration }}, {{ booking.price }}, '{{ booking.status }}', '{{ booking.get_status_display|escapejs }}', '{{ booking.service_description|default:''|escapejs }}', true, {{ booking.barber.id }}, {{ booking.duration }})"
                                         onmouseover="this.style.color='var(--accent)'"
                                         onmouseout="this.style.color='#9aa3b5'">
                                         <i class="fas fa-eye" style="font-size: 13px;"></i>
@@ -562,9 +562,9 @@
     <script>
         // ==================== BOOKING FLOW STATE ====================
         let bookingData = {
-            date: null,         // YYYY-MM-DD
-            time: null,         // HH:MM (24-hr)
-            timeDisplay: null,  // 1:00 PM (for display)
+            date: null,
+            time: null,
+            timeDisplay: null,
             service: null,
             serviceName: null,
             servicePrice: null,
@@ -582,7 +582,7 @@
         function openBookingFlow() {
             document.getElementById('bookingFlow').style.display = 'block';
             document.getElementById('bookingsContainer').style.display = 'none';
-            renderCalendar(); // Render calendar on open
+            renderCalendar();
         }
 
         function closeBookingFlow() {
@@ -612,9 +612,7 @@
             });
 
             if (panelNumber === 2) {
-                // When we go to Panel 2 (Date/Time), render the calendar
                 renderCalendar();
-                // And try to fetch slots if a date is already selected
                 checkAndFetchSlots();
             }
 
@@ -628,7 +626,6 @@
                 date: null, time: null, timeDisplay: null, service: null, serviceName: null,
                 servicePrice: null, serviceDuration: null, barber: null, barberName: null
             };
-            // Reset UI
             document.querySelectorAll('.service-card, .barber-card').forEach(c => c.classList.remove('selected'));
             document.getElementById('nextToPanel2').disabled = true;
             document.getElementById('nextToPanel3').disabled = true;
@@ -647,7 +644,6 @@
             document.querySelectorAll('.service-card').forEach(card => card.classList.remove('selected'));
             event.currentTarget.classList.add('selected');
             
-            // Re-fetch slots if date/barber are also selected
             checkAndFetchSlots();
             checkPanel1Complete();
         }
@@ -660,7 +656,6 @@
             document.querySelectorAll('.barber-card').forEach(card => card.classList.remove('selected'));
             event.currentTarget.classList.add('selected');
             
-            // Re-fetch slots if date/service are also selected
             checkAndFetchSlots();
             checkPanel1Complete();
         }
@@ -718,7 +713,7 @@
                 if (date < minDate || date > maxDate) {
                     dayElement.classList.add('disabled');
                 } else {
-                    dayElement.classList.add('available-day'); // Mark as potentially available
+                    dayElement.classList.add('available-day');
                     dayElement.onclick = () => selectDate(date);
                 }
                 
@@ -734,40 +729,34 @@
             bookingData.date = `${year}-${month}-${day}`;
             document.getElementById('final-date').value = bookingData.date;
             
-            // Reset time
             bookingData.time = null;
             bookingData.timeDisplay = null;
             checkPanel2Complete();
             
-            renderCalendar(); // Re-render to show 'selected'
+            renderCalendar();
             checkAndFetchSlots();
         }
 
         function checkAndFetchSlots() {
-            // Only fetch if all 3 dependencies are ready
             if (bookingData.barber && bookingData.date && bookingData.serviceDuration) {
                 fetchAvailableSlots(bookingData.barber, bookingData.date, bookingData.serviceDuration);
             }
         }
 
-            async function fetchAvailableSlots(barberId, dateStr, duration) {
-                const container = document.getElementById('timeSlotsContainer');
-                container.innerHTML = `<div class="time-slot-placeholder loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>`;
+        async function fetchAvailableSlots(barberId, dateStr, duration) {
+            const container = document.getElementById('timeSlotsContainer');
+            container.innerHTML = `<div class="time-slot-placeholder loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>`;
+            
+            try {
+                const url = `/api/get-slots/${barberId}/${dateStr}/?duration=${duration}`;
+                const response = await fetch(url);
                 
-                try {
-                    // FIXED: Absolute URL with trailing slash
-                    const url = `/api/get-slots/${barberId}/${dateStr}/?duration=${duration}`;
-                    
-                    const response = await fetch(url);
-                    
-                    // FIXED: Added error handling
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    
-                    const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
 
-                
                 if (data.success && data.slots.length > 0) {
                     displayTimeSlots(data.slots);
                 } else {
@@ -783,7 +772,7 @@
             const container = document.getElementById('timeSlotsContainer');
             container.innerHTML = '';
             
-            slots.forEach(timeStr => { // timeStr is "09:00 AM"
+            slots.forEach(timeStr => {
                 const slotElement = document.createElement('div');
                 slotElement.className = 'time-slot';
                 slotElement.textContent = timeStr;
@@ -792,17 +781,16 @@
             });
         }
 
-        function selectTime(timeDisplay) { // "09:00 AM"
+        function selectTime(timeDisplay) {
             bookingData.timeDisplay = timeDisplay;
             
-            // Convert "09:00 AM" or "01:30 PM" to "09:00" or "13:30" (24-hr)
             const parts = timeDisplay.match(/(\d+):(\d+) (AM|PM)/);
             let hour = parseInt(parts[1]);
             const minute = parseInt(parts[2]);
             const ampm = parts[3];
             
             if (ampm === 'PM' && hour !== 12) hour += 12;
-            if (ampm === 'AM' && hour === 12) hour = 0; // Midnight case
+            if (ampm === 'AM' && hour === 12) hour = 0;
             
             bookingData.time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
             document.getElementById('final-time').value = bookingData.time;
@@ -819,7 +807,7 @@
 
         // ==================== PANEL 3: SUMMARY ====================
         function updateSummary() {
-            const dateObj = new Date(bookingData.date + 'T00:00:00'); // Use T00:00 to avoid timezone issues
+            const dateObj = new Date(bookingData.date + 'T00:00:00');
             const dateStr = dateObj.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
             
             document.getElementById('summaryDateTime').textContent = `${dateStr} at ${bookingData.timeDisplay}`;
@@ -828,12 +816,6 @@
             document.getElementById('summaryBarber').textContent = bookingData.barberName;
             document.getElementById('summaryPrice').textContent = `₱${bookingData.servicePrice}`;
         }
-        
-        // ==================== ALL OTHER JS FUNCTIONS ====================
-        // (Paste your existing functions for Modals, Past Bookings, etc., here)
-        // ... (viewBookingDetails, closeViewDetails, etc.) ...
-        
-        // --- Paste all your existing modal functions below this line ---
 
         // ==================== VIEW DETAILS FUNCTIONALITY ====================
         let currentViewBooking = {
@@ -842,17 +824,22 @@
             barber: null,
             date: null,
             time: null,
-            canEdit: false
+            canEdit: false,
+            barberId: null,
+            duration: null
         };
 
-        function viewBookingDetails(id, service, barber, date, time, duration, price, status, statusDisplay, notes, canBeCancelled) {
+        // FIXED: Updated function signature with barberId and serviceDuration
+        function viewBookingDetails(id, service, barber, date, time, duration, price, status, statusDisplay, notes, canBeCancelled, barberId, serviceDuration) {
             currentViewBooking = {
                 id: id,
                 service: service,
                 barber: barber,
                 date: date,
                 time: time,
-                canEdit: canBeCancelled
+                canEdit: canBeCancelled,
+                barberId: barberId,
+                duration: serviceDuration
             };
             
             document.getElementById('detailId').textContent = '#' + id;
@@ -884,7 +871,8 @@
                 rescheduleBtn.innerHTML = '<i class="fas fa-calendar-alt"></i> Reschedule';
                 rescheduleBtn.onclick = function() {
                     closeViewDetails();
-                    openRescheduleFlow(id, service, barber, date, time);
+                    // FIXED: Pass barberId and duration
+                    openRescheduleFlow(id, service, barber, date, time, barberId, serviceDuration);
                 };
                 actionsContainer.appendChild(rescheduleBtn);
                 
@@ -907,7 +895,7 @@
             if (!event || event.target.classList.contains('modal-overlay') || event.target.classList.contains('close-modal-btn')) {
                 document.getElementById('viewDetailsModal').style.display = 'none';
                 document.body.style.overflow = 'auto';
-                currentViewBooking = { id: null, service: null, barber: null, date: null, time: null, canEdit: false };
+                currentViewBooking = { id: null, service: null, barber: null, date: null, time: null, canEdit: false, barberId: null, duration: null };
             }
         }
 
@@ -916,16 +904,18 @@
         let rescheduleData = {
             bookingId: null,
             date: null,
-            time: null
+            time: null,
+            barberId: null,
+            duration: null
         };
 
-        function openRescheduleFlow(bookingId, service, barber, date, time) {
-            // NOTE: This reschedule flow also needs to be updated to use the API.
-            // For now, it will use the old hardcoded logic.
-            // This can be a future step.
+        // FIXED: Cleaned up function with proper parameters
+        function openRescheduleFlow(bookingId, service, barber, date, time, barberId, duration) {
             rescheduleData.bookingId = bookingId;
             rescheduleData.date = null;
             rescheduleData.time = null;
+            rescheduleData.barberId = barberId;
+            rescheduleData.duration = duration;
             
             document.getElementById('rescheduleCurrentService').textContent = service;
             document.getElementById('rescheduleCurrentBarber').textContent = barber;
@@ -942,7 +932,7 @@
             if (!event || event.target.classList.contains('modal-overlay') || event.target.classList.contains('close-modal-btn')) {
                 document.getElementById('rescheduleModal').style.display = 'none';
                 document.body.style.overflow = 'auto';
-                rescheduleData = { bookingId: null, date: null, time: null };
+                rescheduleData = { bookingId: null, date: null, time: null, barberId: null, duration: null };
             }
         }
 
@@ -1013,27 +1003,10 @@
             checkRescheduleComplete();
         }
 
-        function generateRescheduleTimeSlots(date) {
-            // This function is now replaced by checkAndFetchRescheduleSlots()
-            // No-op
+        // FIXED: Simplified function that uses stored data
         function checkAndFetchRescheduleSlots() {
-            // Only fetch if all dependencies are ready
-            if (rescheduleData.bookingId && rescheduleData.date) {
-                // Find the selected booking to get barber and service duration
-                const booking = window.upcomingBookings?.find(b => b.id === rescheduleData.bookingId) || null;
-                let barberId = null;
-                let duration = null;
-                if (booking) {
-                    barberId = booking.barber_id;
-                    duration = booking.duration;
-                } else {
-                    // Fallback: try to get from DOM (not ideal)
-                    barberId = document.getElementById('final-barber').value;
-                    duration = document.getElementById('final-service').value;
-                }
-                if (barberId && duration) {
-                    fetchRescheduleSlots(barberId, rescheduleData.date, duration);
-                }
+            if (rescheduleData.barberId && rescheduleData.date && rescheduleData.duration) {
+                fetchRescheduleSlots(rescheduleData.barberId, rescheduleData.date, rescheduleData.duration);
             }
         }
 
@@ -1042,12 +1015,9 @@
             container.innerHTML = `<div class="time-slot-placeholder loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>`;
             
             try {
-                // FIXED: Absolute URL with trailing slash
                 const url = `/api/get-slots/${barberId}/${dateStr}/?duration=${duration}`;
-                
                 const response = await fetch(url);
                 
-                // FIXED: Added error handling
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
@@ -1079,7 +1049,6 @@
 
         function selectRescheduleTimeStr(timeDisplay) {
             rescheduleData.timeDisplay = timeDisplay;
-            // Convert "09:00 AM" to "09:00" (24-hr)
             const parts = timeDisplay.match(/(\d+):(\d+) (AM|PM)/);
             let hour = parseInt(parts[1]);
             const minute = parseInt(parts[2]);
@@ -1092,16 +1061,6 @@
             event.target.classList.add('selected');
             checkRescheduleComplete();
         }
-        }
-
-        function selectRescheduleTime(hour, minute) {
-            rescheduleData.time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-            document.getElementById('rescheduleNewTime').value = rescheduleData.time;
-            
-            document.querySelectorAll('#rescheduleTimeSlotsContainer .time-slot').forEach(slot => slot.classList.remove('selected'));
-            event.target.classList.add('selected');
-            checkRescheduleComplete();
-        }
 
         function checkRescheduleComplete() {
             const btn = document.getElementById('rescheduleSubmitBtn');
@@ -1109,8 +1068,6 @@
         }
 
         function submitReschedule() {
-            // This reschedule submit logic is still simple and
-            // relies on the server-side validation. This is OK for now.
             const form = document.getElementById('rescheduleForm');
             form.action = `/bookings/${rescheduleData.bookingId}/reschedule/`;
             form.submit();

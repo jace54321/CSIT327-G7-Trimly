@@ -56,6 +56,8 @@ urlpatterns = [
     path("bookings/<int:booking_id>/update-status/", views.update_booking_status, name="update_booking_status"),
     path("bookings/<int:booking_id>/rate/", views.submit_rating_view, name="submit_rating"),
     path('api/get-slots/<int:barber_id>/<str:date_str>/', views.get_available_slots_api, name='get_available_slots_api'),
+    path('bookings/<int:booking_id>/reject/', views.barber_reject_booking, name='reject_booking'),
+
 
     #-------ADMIN URL-------
     path('admin-dashboard/', views.admin_dashboard_view, name='admin_dashboard'),
