@@ -1,0 +1,866 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - Trimly</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <link rel="stylesheet" href="{% static 'base.css' %}">
+  <link rel="stylesheet" href="{% static 'admin_dashboard.css' %}">
+</head>
+<body>
+
+  <nav class="navbar navbar-glass">
+    <div class="navbar-left">
+      <a href="{% url 'admin_dashboard' %}" class="logo-link">
+        <div class="brand-mark">
+          <i class="fas fa-shield-alt"></i>
+        </div>
+        <h1 class="logo">Admin Panel</h1>
+      </a>
+    </div>
+    
+    <div class="navbar-right">
+      <ul class="nav-list">
+        <li><a href="{% url 'admin_dashboard' %}" class="nav-link active">Dashboard</a></li>
+      </ul>
+      
+      <div class="user-greeting">
+        <i class="fas fa-user-shield"></i>
+        <span>Admin: {{ request.user.username }}</span>
+      </div>
+      
+      <form method="post" action="{% url 'logout' %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-ghost">
+              <i class="fas fa-sign-out-alt"></i> Logout
+          </button>
+      </form>
+    </div>
+  </nav>
+
+  <div class="admin-container">
+    
+    <div class="admin-header">
+      <h2>Site Overview</h2>
+    </div>
+
+    {% if messages %}
+    <div class="messages-container">
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                <i class="fas fa-{% if message.tags == 'error' %}exclamation-circle{% else %}check-circle{% endif %}"></i>
+                <span>{{ message }}</span>
+                <a href="{% url 'admin_dashboard' %}" class="close-alert">&times;</a>
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon revenue">
+          <i class="fas fa-dollar-sign"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Total Revenue</span>
+          <span class="stat-value">₱{{ total_revenue|floatformat:2 }}</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon bookings">
+          <i class="fas fa-calendar-check"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Total Bookings</span>
+          <span class="stat-value">{{ total_bookings }}</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon customers">
+          <i class="fas fa-users"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Total Customers</span>
+          <span class="stat-value">{{ total_customers }}</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon barbers">
+          <i class="fas fa-cut"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Total Barbers</span>
+          <span class="stat-value">{{ total_barbers }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="management-grid">
+      
+      <div class="glass-card">
+        <h3><i class="fas fa-history"></i> All Bookings</h3>
+        
+        <form method="GET" action="{% url 'admin_dashboard' %}" class="filter-form">
+          <div class="filter-group">
+            <label for="filter-barber">Barber</label>
+            <select name="barber" id="filter-barber">
+              <option value="">All Barbers</option>
+              {% for barber in all_barbers %}
+                <option value="{{ barber.id }}" {% if filter_params.barber == barber.id|stringformat:"s" %}selected{% endif %}>
+                  {{ barber.get_full_name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="filter-group">
+            <label for="filter-status">Status</label>
+            <select name="status" id="filter-status">
+              <option value="">All Statuses</option>
+              {% for value, display in status_choices %}
+                <option value="{{ value }}" {% if filter_params.status == value %}selected{% endif %}>
+                  {{ display }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="filter-group">
+            <label for="filter-start-date">Start Date</label>
+            <input type="date" name="start_date" id="filter-start-date" value="{{ filter_params.start_date }}">
+          </div>
+          <div class="filter-group">
+            <label for="filter-end-date">End Date</label>
+            <input type="date" name="end_date" id="filter-end-date" value="{{ filter_params.end_date }}">
+          </div>
+          <div class="filter-actions">
+            <button type="submit" class="btn-primary">Filter</button>
+            <a href="{% url 'admin_dashboard' %}" class="btn-secondary">Clear</a>
+          </div>
+        </form>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Barber</th>
+                <th>Service</th>
+                <th>Date</th>
+                <th>Price</th>
+                <th>Status / Actions</th> </tr>
+            </thead>
+            <tbody>
+              {% for booking in bookings_page %}
+                <tr>
+                  <td>{{ booking.customer.get_full_name }}</td>
+                  <td>{{ booking.barber.get_full_name }}</td>
+                  <td>{{ booking.service_type.name }}</td>
+                  <td>{{ booking.appointment_datetime|date:"M d, Y" }}</td>
+                  <td>₱{{ booking.price|floatformat:2 }}</td>
+                  
+                  <td class="actions-cell">
+                    <form 
+                      method="POST" 
+                      action="{% url 'admin_update_booking_status' booking.id %}" 
+                      class="status-update-form"
+                    >
+                      {% csrf_token %}
+                      <select name="status" class="status-select status-{{ booking.status }}">
+                        {% for value, display in status_choices %}
+                          <option value="{{ value }}" {% if booking.status == value %}selected{% endif %}>
+                            {{ display }}
+                          </option>
+                        {% endfor %}
+                      </select>
+                      <button type="submit" class="btn-action update">
+                        <i class="fas fa-check"></i>
+                      </button>
+                    </form>
+                  </td>
+                  
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="6" class="empty-state">No bookings found matching filters.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="pagination-controls">
+          <span class="page-info">
+            Page {{ bookings_page.number }} of {{ bookings_page.paginator.num_pages }}.
+          </span>
+          <div class="page-links">
+            {% if bookings_page.has_previous %}
+              <a href="?page=1{% for key, value in filter_params.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="btn-secondary">&laquo; First</a>
+              <a href="?page={{ bookings_page.previous_page_number }}{% for key, value in filter_params.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="btn-secondary">Previous</a>
+            {% endif %}
+            
+            {% if bookings_page.has_next %}
+              <a href="?page={{ bookings_page.next_page_number }}{% for key, value in filter_params.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="btn-secondary">Next</a>
+              <a href="?page={{ bookings_page.paginator.num_pages }}{% for key, value in filter_params.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="btn-secondary">Last &raquo;</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-card">
+        <div class="card-header">
+            <h3><i class="fas fa-users-cog"></i> Manage Customers</h3>
+            <button class="btn btn-primary" onclick="openCreateModal()">
+                <i class="fas fa-plus"></i> Create Customer
+            </button>
+        </div>
+
+        <form method="GET" action="{% url 'admin_dashboard' %}" class="filter-form customer-filter">
+          <div class="filter-group">
+            <label for="filter-customer-name">Filter by Name</label>
+            <input 
+              type="text" 
+              name="customer_name" 
+              id="filter-customer-name" 
+              value="{{ filter_params.customer_name }}"
+              placeholder="Enter name or username...">
+          </div>
+          <div class="filter-actions">
+            <button type="submit" class="btn-primary">Filter</button>
+            <a href="{% url 'admin_dashboard' %}" class="btn-secondary">Clear</a>
+          </div>
+        </form>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for customer in customers_page %}
+                <tr>
+                  <td>{{ customer.get_full_name }}</td>
+                  <td>{{ customer.user.email }}</td>
+                  <td>{{ customer.phone_number }}</td>
+                  <td class="actions-cell">
+                    <button class="btn-action edit" onclick="openEditModal(
+                      '{{ customer.user.id }}',
+                      '{{ customer.user.username }}',
+                      '{{ customer.user.email }}',
+                      '{{ customer.user.first_name }}',
+                      '{{ customer.user.last_name }}',
+                      '{{ customer.phone_number }}',
+                      '{{ customer.get_full_name|escapejs }}'
+                    )">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-action delete" onclick="openDeleteModal(
+                      '{{ customer.user.id }}',
+                      '{{ customer.get_full_name }}'
+                    )">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="4" class="empty-state">No customers found.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination-controls">
+          <span class="page-info">
+            Page {{ customers_page.number }} of {{ customers_page.paginator.num_pages }}.
+          </span>
+          <div class="page-links">
+            {% if customers_page.has_previous %}
+              <a href="?c_page=1{% for key, value in filter_params.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="btn-secondary">&laquo; First</a>
+              <a href="?c_page={{ customers_page.previous_page_number }}{% for key, value in filter_params.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="btn-secondary">Previous</a>
+            {% endif %}
+            
+            {% if customers_page.has_next %}
+              <a href="?c_page={{ customers_page.next_page_number }}{% for key, value in filter_params.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="btn-secondary">Next</a>
+              <a href="?c_page={{ customers_page.paginator.num_pages }}{% for key, value in filter_params.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="btn-secondary">Last &raquo;</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-card">
+        <div class="card-header">
+            <h3><i class="fas fa-cut"></i> Manage Barbers</h3>
+            <button class="btn btn-primary" onclick="openCreateBarberModal()">
+                <i class="fas fa-plus"></i> Create Barber
+            </button>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for barber in all_barbers %}
+                <tr>
+                  <td>{{ barber.get_full_name }}</td>
+                  <td>{{ barber.user.email }}</td>
+                  <td>{{ barber.phone_number }}</td>
+                  <td class="actions-cell">
+                    <button class="btn-action edit" onclick="openEditBarberModal(
+                      '{{ barber.user.id }}',
+                      '{{ barber.user.username }}',
+                      '{{ barber.user.email }}',
+                      '{{ barber.user.first_name }}',
+                      '{{ barber.user.last_name }}',
+                      '{{ barber.phone_number }}',
+                      '{{ barber.get_full_name|escapejs }}'
+                    )">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-action delete" onclick="openDeleteBarberModal(
+                      '{{ barber.user.id }}',
+                      '{{ barber.get_full_name }}'
+                    )">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="4" class="empty-state">No barbers found.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="glass-card">
+        <div class="card-header">
+            <h3><i class="fas fa-tags"></i> Manage Services</h3>
+            <button class="btn btn-primary" onclick="openCreateServiceModal()">
+                <i class="fas fa-plus"></i> Create Service
+            </button>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Price</th>
+                <th>Duration (min)</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for service in all_services %}
+                <tr>
+                  <td>{{ service.name }}</td>
+                  <td>₱{{ service.price|floatformat:2 }}</td>
+                  <td>{{ service.duration }} min</td>
+                  <td class="actions-cell">
+                    <button class="btn-action edit" onclick="openEditServiceModal(
+                      '{{ service.id }}',
+                      '{{ service.name|escapejs }}',
+                      '{{ service.price|floatformat:2 }}',
+                      '{{ service.duration }}',
+                      '{{ service.description|escapejs }}'
+                    )">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-action delete" onclick="openDeleteServiceModal(
+                      '{{ service.id }}',
+                      '{{ service.name|escapejs }}'
+                    )">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="4" class="empty-state">No services found.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div> </div> <div class="modal-overlay" id="createCustomerModal" style="display: none;" onclick="closeModal('createCustomerModal', event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <form method="POST" action="{% url 'admin_create_customer' %}">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h3><i class="fas fa-user-plus"></i> Create New Customer</h3>
+          <button type="button" class="close-modal-btn" onclick="closeModal('createCustomerModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="create-username">Username</label>
+              <input type="text" id="create-username" name="username" required>
+            </div>
+            <div class="form-group">
+              <label for="create-password">Password</label>
+              <input type="password" id="create-password" name="password" required>
+            </div>
+            <div class="form-group">
+              <label for="create-email">Email</label>
+              <input type="email" id="create-email" name="email" required>
+            </div>
+            <div class="form-group">
+              <label for="create-phone">Phone Number</label>
+              <input type="text" id="create-phone" name="phone_number" placeholder="09xxxxxxxxx" required>
+            </div>
+            <div class="form-group">
+              <label for="create-first-name">First Name</label>
+              <input type="text" id="create-first-name" name="first_name" required>
+            </div>
+            <div class="form-group">
+              <label for="create-last-name">Last Name</label>
+              <input type="text" id="create-last-name" name="last_name" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeModal('createCustomerModal')">Cancel</button>
+          <button type="submit" class="btn-primary"><i class="fas fa-check"></i> Create Customer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="editCustomerModal" style="display: none;" onclick="closeModal('editCustomerModal', event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <form method="POST" id="editCustomerForm">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h3><i class="fas fa-edit"></i> Edit Customer</h3>
+          <button type="button" class="close-modal-btn" onclick="closeModal('editCustomerModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Username (cannot be changed)</label>
+            <input type="text" id="edit-username" name="username" readonly disabled>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="edit-email">Email</label>
+              <input type="email" id="edit-email" name="email" required>
+            </div>
+            <div class="form-group">
+              <label for="edit-phone">Phone Number</label>
+              <input type="text" id="edit-phone" name="phone_number" placeholder="09xxxxxxxxx" required>
+            </div>
+            <div class="form-group">
+              <label for="edit-first-name">First Name</label>
+              <input type="text" id="edit-first-name" name="first_name" required>
+            </div>
+            <div class="form-group">
+              <label for="edit-last-name">Last Name</label>
+              <input type="text" id="edit-last-name" name="last_name" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button 
+            type="button" 
+            class="btn-danger" 
+            style="margin-right: auto;"
+            id="editCustomer_resetPasswordBtn" 
+          >
+            <i class="fas fa-key"></i> Reset Password
+          </button>
+          
+          <button type="button" class="btn-secondary" onclick="closeModal('editCustomerModal')">Cancel</button>
+          <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="deleteCustomerModal" style="display: none;" onclick="closeModal('deleteCustomerModal', event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <form method="POST" id="deleteCustomerForm">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h3><i class="fas fa-exclamation-triangle"></i> Delete Customer?</h3>
+          <button type="button" class="close-modal-btn" onclick="closeModal('deleteCustomerModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to delete this customer? This will also delete all their bookings and cannot be undone.</p>
+          <div class="modal-summary-box">
+            <p><strong>Customer:</strong> <span id="delete-customer-name">-</span></p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeModal('deleteCustomerModal')">Cancel</a</button>
+          <button type="submit" class="btn-danger"><i class="fas fa-trash"></i> Yes, Delete Customer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <div class="modal-overlay" id="createBarberModal" style="display: none;" onclick="closeModal('createBarberModal', event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <form method="POST" action="{% url 'admin_create_barber' %}">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h3><i class="fas fa-user-plus"></i> Create New Barber</h3>
+          <button type="button" class="close-modal-btn" onclick="closeModal('createBarberModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="create-barber-username">Username</label>
+              <input type="text" id="create-barber-username" name="username" required>
+            </div>
+            <div class="form-group">
+              <label for="create-barber-password">Password</label>
+              <input type="password" id="create-barber-password" name="password" required>
+            </div>
+            <div class="form-group">
+              <label for="create-barber-email">Email</label>
+              <input type="email" id="create-barber-email" name="email" required>
+            </div>
+            <div class="form-group">
+              <label for="create-barber-phone">Phone Number</label>
+              <input type="text" id="create-barber-phone" name="phone_number" placeholder="09xxxxxxxxx" required>
+            </div>
+            <div class="form-group">
+              <label for="create-barber-first-name">First Name</label>
+              <input type="text" id="create-barber-first-name" name="first_name" required>
+            </div>
+            <div class="form-group">
+              <label for="create-barber-last-name">Last Name</label>
+              <input type="text" id="create-barber-last-name" name="last_name" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeModal('createBarberModal')">Cancel</button>
+          <button type="submit" class="btn-primary"><i class="fas fa-check"></i> Create Barber</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="editBarberModal" style="display: none;" onclick="closeModal('editBarberModal', event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <form method="POST" id="editBarberForm">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h3><i class="fas fa-edit"></i> Edit Barber</h3>
+          <button type="button" class="close-modal-btn" onclick="closeModal('editBarberModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Username (cannot be changed)</label>
+            <input type="text" id="edit-barber-username" name="username" readonly disabled>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="edit-barber-email">Email</label>
+              <input type="email" id="edit-barber-email" name="email" required>
+            </div>
+            <div class="form-group">
+              <label for="edit-barber-phone">Phone Number</label>
+              <input type="text" id="edit-barber-phone" name="phone_number" placeholder="09xxxxxxxxx" required>
+            </div>
+            <div class="form-group">
+              <label for="edit-barber-first-name">First Name</label>
+              <input type="text" id="edit-barber-first-name" name="first_name" required>
+            </div>
+            <div class="form-group">
+              <label for="edit-barber-last-name">Last Name</label>
+              <input type="text" id="edit-barber-last-name" name="last_name" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button 
+            type="button" 
+            class="btn-danger" 
+            style="margin-right: auto;"
+            id="editBarber_resetPasswordBtn"
+          >
+            <i class="fas fa-key"></i> Reset Password
+          </button>
+          
+          <button type="button" class="btn-secondary" onclick="closeModal('editBarberModal')">Cancel</button>
+          <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="deleteBarberModal" style="display: none;" onclick="closeModal('deleteBarberModal', event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <form method="POST" id="deleteBarberForm">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h3><i class="fas fa-exclamation-triangle"></i> Delete Barber?</h3>
+          <button type="button" class="close-modal-btn" onclick="closeModal('deleteBarberModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to delete this barber? This will also delete all their schedules, overrides, and bookings. This cannot be undone.</p>
+          <div class="modal-summary-box">
+            <p><strong>Barber:</strong> <span id="delete-barber-name">-</span></p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeModal('deleteBarberModal')">Cancel</a</button>
+          <button type="submit" class="btn-danger"><i class="fas fa-trash"></i> Yes, Delete Barber</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="createServiceModal" style="display: none;" onclick="closeModal('createServiceModal', event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <form method="POST" action="{% url 'admin_create_service' %}">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h3><i class="fas fa-plus"></i> Create New Service</h3>
+          <button type="button" class="close-modal-btn" onclick="closeModal('createServiceModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="create-service-name">Service Name</label>
+            <input type="text" id="create-service-name" name="name" required>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="create-service-price">Price (₱)</label>
+              <input type="number" id="create-service-price" name="price" step="0.01" min="0" required>
+            </div>
+            <div class="form-group">
+              <label for="create-service-duration">Duration (minutes)</label>
+              <input type="number" id="create-service-duration" name="duration" step="5" min="5" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="create-service-desc">Description (Optional)</label>
+            <textarea id="create-service-desc" name="description" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeModal('createServiceModal')">Cancel</button>
+          <button type="submit" class="btn-primary"><i class="fas fa-check"></i> Create Service</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="editServiceModal" style="display: none;" onclick="closeModal('editServiceModal', event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <form method="POST" id="editServiceForm">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h3><i class="fas fa-edit"></i> Edit Service</h3>
+          <button type="button" class="close-modal-btn" onclick="closeModal('editServiceModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="edit-service-name">Service Name</label>
+            <input type="text" id="edit-service-name" name="name" required>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="edit-service-price">Price (₱)</label>
+              <input type="number" id="edit-service-price" name="price" step="0.01" min="0" required>
+            </div>
+            <div class="form-group">
+              <label for="edit-service-duration">Duration (minutes)</label>
+              <input type="number" id="edit-service-duration" name="duration" step="5" min="5" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="edit-service-desc">Description (Optional)</label>
+            <textarea id="edit-service-desc" name="description" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeModal('editServiceModal')">Cancel</button>
+          <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="deleteServiceModal" style="display: none;" onclick="closeModal('deleteServiceModal', event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <form method="POST" id="deleteServiceForm">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h3><i class="fas fa-exclamation-triangle"></i> Delete Service?</h3>
+          <button type="button" class="close-modal-btn" onclick="closeModal('deleteServiceModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to delete this service? This cannot be undone. (This will fail if the service is attached to any existing bookings).</p>
+          <div class="modal-summary-box">
+            <p><strong>Service:</strong> <span id="delete-service-name">-</span></p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeModal('deleteServiceModal')">Cancel</a</button>
+          <button type="submit" class="btn-danger"><i class="fas fa-trash"></i> Yes, Delete Service</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="resetPasswordModal" style="display: none;" onclick="closeModal('resetPasswordModal', event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <form method="POST" id="resetPasswordForm">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h3><i class="fas fa-key"></i> Reset Password</h3>
+          <button type="button" class="close-modal-btn" onclick="closeModal('resetPasswordModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+          <p>You are resetting the password for: <strong id="reset-user-name">-</strong></p>
+          <div class="form-group">
+            <label for="new_password">New Password</label>
+            <input type="password" name="new_password" required>
+          </div>
+          <div class="form-group">
+            <label for="confirm_password">Confirm New Password</label>
+            <input type="password" name="confirm_password" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeModal('resetPasswordModal')">Cancel</button>
+          <button type="submit" class="btn-danger"><i class="fas fa-check"></i> Set New Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  
+  <script>
+    function closeModal(modalId, event) {
+      // Check if the click is on the overlay background or a close button
+      if (!event || 
+          event.target.id === modalId || 
+          event.target.classList.contains('close-modal-btn') || 
+          event.target.closest('.close-modal-btn')) {
+        document.getElementById(modalId).style.display = 'none';
+        document.body.style.overflow = 'auto';
+      }
+    }
+    
+    // --- Customer Modals ---
+    function openCreateModal() {
+      document.getElementById('createCustomerModal').style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function openEditModal(userId, username, email, firstName, lastName, phone, fullName) { // <-- CORRECTED: added fullName
+      document.getElementById('editCustomerForm').action = `/admin-dashboard/customer/edit/${userId}/`;
+      document.getElementById('edit-username').value = username;
+      document.getElementById('edit-email').value = email;
+      document.getElementById('edit-first-name').value = firstName;
+      document.getElementById('edit-last-name').value = lastName;
+      document.getElementById('edit-phone').value = phone;
+
+      // CORRECTED: Find the reset button and set its click event
+      const resetBtn = document.getElementById('editCustomer_resetPasswordBtn');
+      resetBtn.onclick = () => openResetPasswordModal(userId, fullName);
+
+      document.getElementById('editCustomerModal').style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function openDeleteModal(userId, fullName) {
+      document.getElementById('deleteCustomerForm').action = `/admin-dashboard/customer/delete/${userId}/`;
+      document.getElementById('delete-customer-name').textContent = fullName;
+      document.getElementById('deleteCustomerModal').style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    // --- Barber Modals ---
+    function openCreateBarberModal() {
+      document.getElementById('createBarberModal').style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function openEditBarberModal(userId, username, email, firstName, lastName, phone, fullName) { // <-- CORRECTED: added fullName
+      document.getElementById('editBarberForm').action = `/admin-dashboard/barber/edit/${userId}/`;
+      document.getElementById('edit-barber-username').value = username;
+      document.getElementById('edit-barber-email').value = email;
+      document.getElementById('edit-barber-first-name').value = firstName;
+      document.getElementById('edit-barber-last-name').value = lastName;
+      document.getElementById('edit-barber-phone').value = phone;
+      
+      // CORRECTED: Find the reset button and set its click event
+      const resetBtn = document.getElementById('editBarber_resetPasswordBtn');
+      resetBtn.onclick = () => openResetPasswordModal(userId, fullName);
+
+      document.getElementById('editBarberModal').style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function openDeleteBarberModal(userId, fullName) {
+      document.getElementById('deleteBarberForm').action = `/admin-dashboard/barber/delete/${userId}/`;
+      document.getElementById('delete-barber-name').textContent = fullName;
+      document.getElementById('deleteBarberModal').style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    // --- Service Modals ---
+    function openCreateServiceModal() {
+      document.getElementById('createServiceModal').style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function openEditServiceModal(serviceId, name, price, duration, description) {
+      document.getElementById('editServiceForm').action = `/admin-dashboard/service/edit/${serviceId}/`;
+      document.getElementById('edit-service-name').value = name;
+      document.getElementById('edit-service-price').value = price;
+      document.getElementById('edit-service-duration').value = duration;
+      document.getElementById('edit-service-desc').value = description;
+      document.getElementById('editServiceModal').style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function openDeleteServiceModal(serviceId, name) {
+      document.getElementById('deleteServiceForm').action = `/admin-dashboard/service/delete/${serviceId}/`;
+      document.getElementById('delete-service-name').textContent = name;
+      document.getElementById('deleteServiceModal').style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+    
+    // --- Password Reset Modal ---
+    function openResetPasswordModal(userId, fullName) {
+      document.getElementById('resetPasswordForm').action = `/admin-dashboard/user/reset-password/${userId}/`;
+      document.getElementById('reset-user-name').textContent = fullName;
+      
+      document.getElementById('resetPasswordModal').style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+      
+      // Close the modal that's "behind" it
+      closeModal('editCustomerModal');
+      closeModal('editBarberModal');
+    }
+  </script>
+
+</body>
+</html>
