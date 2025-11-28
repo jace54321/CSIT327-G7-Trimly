@@ -298,58 +298,85 @@
         </div>
       </div>
 
-      <div class="glass-card">
-        <div class="card-header">
-            <h3><i class="fas fa-cut"></i> Manage Barbers</h3>
-            <button class="btn btn-primary" onclick="openCreateBarberModal()">
-                <i class="fas fa-plus"></i> Create Barber
-            </button>
-        </div>
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for barber in all_barbers %}
-                <tr>
-                  <td>{{ barber.get_full_name }}</td>
-                  <td>{{ barber.user.email }}</td>
-                  <td>{{ barber.phone_number }}</td>
-                  <td class="actions-cell">
-                    <button class="btn-action edit" onclick="openEditBarberModal(
-                      '{{ barber.user.id }}',
-                      '{{ barber.user.username }}',
-                      '{{ barber.user.email }}',
-                      '{{ barber.user.first_name }}',
-                      '{{ barber.user.last_name }}',
-                      '{{ barber.phone_number }}',
-                      '{{ barber.get_full_name|escapejs }}'
-                    )">
-                      <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn-action delete" onclick="openDeleteBarberModal(
-                      '{{ barber.user.id }}',
-                      '{{ barber.get_full_name }}'
-                    )">
-                      <i class="fas fa-trash"></i>
-                    </button>
-                  </td>
-                </tr>
-              {% empty %}
-                <tr>
-                  <td colspan="4" class="empty-state">No barbers found.</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
+<div class="glass-card">
+    <div class="card-header">
+        <h3><i class="fas fa-cut"></i> Manage Barbers</h3>
+        <button class="btn btn-primary" onclick="openCreateBarberModal()">
+            <i class="fas fa-plus"></i> Create Barber
+        </button>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for barber in all_barbers %}
+            <tr>
+              <td>{{ barber.get_full_name }}</td>
+              <td>{{ barber.user.email }}</td>
+              <td>{{ barber.phone_number }}</td>
+
+              <td class="actions-cell">
+
+                <!-- Existing Edit -->
+                <button class="btn-action edit" onclick="openEditBarberModal(
+                  '{{ barber.user.id }}',
+                  '{{ barber.user.username }}',
+                  '{{ barber.user.email }}',
+                  '{{ barber.user.first_name }}',
+                  '{{ barber.user.last_name }}',
+                  '{{ barber.phone_number }}',
+                  '{{ barber.get_full_name|escapejs }}'
+                )">
+                  <i class="fas fa-edit"></i>
+                </button>
+
+                <!-- Existing Delete -->
+                <button class="btn-action delete" onclick="openDeleteBarberModal(
+                  '{{ barber.user.id }}',
+                  '{{ barber.get_full_name }}'
+                )">
+                  <i class="fas fa-trash"></i>
+                </button>
+
+                <!-- ⭐ APPROVE / REJECT BUTTONS INSIDE THE TD -->
+                {% if not barber.is_approved %}
+                  <form method="POST" action="{% url 'approve_barber' barber.id %}" style="display:inline;">
+                      {% csrf_token %}
+                      <button type="submit" class="btn-action approve" title="Approve Barber">
+                          <i class="fas fa-check"></i>
+                      </button>
+                  </form>
+
+                  <form method="POST" action="{% url 'reject_barber' barber.id %}" style="display:inline;">
+                      {% csrf_token %}
+                      <button type="submit" class="btn-action reject" title="Reject Barber">
+                          <i class="fas fa-times"></i>
+                      </button>
+                  </form>
+                {% endif %}
+
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4" class="empty-state">No barbers found.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+
+      </table>
+    </div>
+</div>
+
 
       <div class="glass-card">
         <div class="card-header">
