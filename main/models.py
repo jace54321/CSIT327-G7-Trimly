@@ -30,10 +30,9 @@ class ServiceType(models.Model):
 
 
 class Barber(models.Model):
-    """
-    Barber model for individual barber system
-    OneToOne with User provides: username, email, password, first_name, last_name
-    """
+    # OneToOne relationship with Django User model (REQUIRED)
+    # This gives access to username, email, password, first_name, last_name
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='barber_profile')
     
     # Professional information
@@ -55,6 +54,9 @@ class Barber(models.Model):
     # Status and availability
     is_active = models.BooleanField(default=True)
     is_available_for_booking = models.BooleanField(default=True)
+    
+    # **Admin approval field**
+    is_approved = models.BooleanField(default=False, help_text="Indicates if the barber has been approved by an admin")
     
     # Ratings (calculated from customer feedback)
     average_rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)

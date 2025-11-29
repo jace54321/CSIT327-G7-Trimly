@@ -26,6 +26,8 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Q, Sum, Count, Avg
 from .models import Reservation, Barber, Customer, ServiceType
 from django.core.paginator import Paginator
+from django.views.decorators.http import require_POST
+
 
 
 # Landing page
@@ -44,6 +46,27 @@ def auth_view(request):
     show_register = request.GET.get('mode') == 'register'
     return render(request, "auth.html", {'show_register': show_register})
 
+# Wait for approval 
+def waiting_approval_view(request):
+    return render(request, "waiting_for_approval.html")
+@require_POST
+def approve_barber(request, barber_id):
+    if request.method == "POST":
+        barber = get_object_or_404(Barber, id=barber_id)
+        barber.is_approved = True
+        barber.save()
+        messages.success(request, "Barber approved successfully!")
+    return redirect("admin_dashboard")
+
+
+
+@require_POST
+def reject_barber(request, barber_id):
+    if request.method == "POST":
+        barber = get_object_or_404(Barber, id=barber_id)
+        barber.delete()
+        messages.success(request, "Barber rejected and removed.")
+    return redirect("admin_dashboard")
 
 # Registration
 def registration_view(request):
@@ -123,17 +146,20 @@ def registration_view(request):
             clean_phone = validate_phone_number(phone_number)
 
             if role == "barber":
+                # Create barber with default is_approved=False
                 Barber.objects.create(user=user, phone_number=clean_phone)
-                redirect_url = "barber_dashboard"
+                messages.info(request, "Your account is pending admin approval. Please wait to be approved.")
+                # Show waiting page instead of logging in
+                return redirect("waiting_approval")
+
             elif role == "customer":
                 Customer.objects.create(user=user, phone_number=clean_phone)
-                redirect_url = "customer_dashboard"
+                login(request, user)
+                messages.success(request, "Registration successful! Welcome!")
+                return redirect("customer_dashboard")
             else:
-                redirect_url = "landing"
-
-            login(request, user)
-            messages.success(request, "Registration successful! Welcome!")
-            return redirect(redirect_url)
+                login(request, user)
+                return redirect("landing")
 
         except IntegrityError:
             messages.error(request, "Registration unsuccessful! Please try again.")
@@ -168,6 +194,11 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         
         if user is not None:
+            # If user is a barber, check approval
+            if hasattr(user, "barber_profile") and not user.barber_profile.is_approved:
+                messages.info(request, "Your account is pending admin approval.")
+                return render(request, "waiting_for_approval.html", {"user": user})
+
             login(request, user)
             if hasattr(user, "barber_profile"):
                 return redirect("barber_dashboard")
@@ -182,6 +213,7 @@ def login_view(request):
         return redirect('auth')
     
     return redirect('auth')
+
 
 
 # Helper: Get available slots (bugFix/time-slots: barber time-slots not reflecting on customer dashboard)
@@ -357,7 +389,7 @@ def customer_dashboard(request):
         ).select_related('barber__user', 'service_type').order_by('-appointment_datetime')[:10]
         
         services = ServiceType.objects.filter(is_active=True).order_by('name')
-        barbers = Barber.objects.filter(is_active=True, is_available_for_booking=True).select_related('user')
+        barbers = Barber.objects.filter(is_active=True, is_available_for_booking=True, is_approved=True ).select_related('user')
         
         selected_booking = None
         reschedule_booking = None
