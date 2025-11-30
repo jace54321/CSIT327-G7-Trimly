@@ -344,8 +344,10 @@ def customer_dashboard(request):
         ).select_related('barber__user', 'service_type').order_by('appointment_datetime')
         
         past_bookings = Reservation.objects.filter(
-            customer=customer,
-            appointment_datetime__lt=now,
+            customer=customer
+        ).filter(
+            Q(appointment_datetime__lt=now) | 
+            Q(status__in=['completed', 'no_show', 'cancelled']) 
         ).select_related('barber__user', 'service_type').order_by('-appointment_datetime')[:10]
         
         services = ServiceType.objects.filter(is_active=True).order_by('name')

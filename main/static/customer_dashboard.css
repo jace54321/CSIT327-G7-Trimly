@@ -1680,3 +1680,51 @@ body {
   transform: translateY(2px);
   transition: transform 0.2s;
 }
+
+
+/* ==================== STAR RATING SYSTEM ==================== */
+.star-rating-container {
+  display: flex;
+  flex-direction: row-reverse; 
+  justify-content: center;
+  gap: 12px;
+  margin: 20px 0;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  /* Removed backdrop-filter here to save performance */
+}
+
+/* Hide radio buttons */
+.star-rating-container input[type="radio"] {
+  display: none;
+}
+
+/* The Star Icons */
+.star-rating-container label {
+  color: #4b5563; 
+  font-size: 28px; 
+  cursor: pointer;
+  
+  /* PERFORMANCE FIX: */
+  /* 1. Animate ONLY color and transform (not 'all') */
+  /* 2. Shorten time to 0.1s for "snappy" feel */
+  transition: color 0.1s ease-out, transform 0.1s ease-out;
+  
+  /* Fix for some browsers causing text-flicker during transform */
+  backface-visibility: hidden; 
+  transform: translateZ(0);
+}
+
+/* HOVER & CHECKED STATE */
+.star-rating-container input:checked ~ label,
+.star-rating-container input:checked + label,
+.star-rating-container label:hover,
+.star-rating-container label:hover ~ label {
+  color: var(--accent);
+  
+  /* Reduced shadow spread slightly for performance */
+  text-shadow: 0 0 8px rgba(243, 211, 124, 0.4); 
+  
+  transform: scale(1.15); /* Slightly larger pop for better feedback */
+}
