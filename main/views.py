@@ -26,6 +26,8 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Q, Sum, Count, Avg
 from .models import Reservation, Barber, Customer, ServiceType
 from django.core.paginator import Paginator
+from django.views.decorators.http import require_POST
+
 
 
 # Landing page
@@ -44,6 +46,27 @@ def auth_view(request):
     show_register = request.GET.get('mode') == 'register'
     return render(request, "auth.html", {'show_register': show_register})
 
+# Wait for approval 
+def waiting_approval_view(request):
+    return render(request, "waiting_for_approval.html")
+@require_POST
+def approve_barber(request, barber_id):
+    if request.method == "POST":
+        barber = get_object_or_404(Barber, id=barber_id)
+        barber.is_approved = True
+        barber.save()
+        messages.success(request, "Barber approved successfully!")
+    return redirect("admin_dashboard")
+
+
+
+@require_POST
+def reject_barber(request, barber_id):
+    if request.method == "POST":
+        barber = get_object_or_404(Barber, id=barber_id)
+        barber.delete()
+        messages.success(request, "Barber rejected and removed.")
+    return redirect("admin_dashboard")
 
 # Registration
 def registration_view(request):
@@ -123,17 +146,20 @@ def registration_view(request):
             clean_phone = validate_phone_number(phone_number)
 
             if role == "barber":
+                # Create barber with default is_approved=False
                 Barber.objects.create(user=user, phone_number=clean_phone)
-                redirect_url = "barber_dashboard"
+                messages.info(request, "Your account is pending admin approval. Please wait to be approved.")
+                # Show waiting page instead of logging in
+                return redirect("waiting_approval")
+
             elif role == "customer":
                 Customer.objects.create(user=user, phone_number=clean_phone)
-                redirect_url = "customer_dashboard"
+                login(request, user)
+                messages.success(request, "Registration successful! Welcome!")
+                return redirect("customer_dashboard")
             else:
-                redirect_url = "landing"
-
-            login(request, user)
-            messages.success(request, "Registration successful! Welcome!")
-            return redirect(redirect_url)
+                login(request, user)
+                return redirect("landing")
 
         except IntegrityError:
             messages.error(request, "Registration unsuccessful! Please try again.")
@@ -168,6 +194,11 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         
         if user is not None:
+            # If user is a barber, check approval
+            if hasattr(user, "barber_profile") and not user.barber_profile.is_approved:
+                messages.info(request, "Your account is pending admin approval.")
+                return render(request, "waiting_for_approval.html", {"user": user})
+
             login(request, user)
             if hasattr(user, "barber_profile"):
                 return redirect("barber_dashboard")
@@ -182,6 +213,7 @@ def login_view(request):
         return redirect('auth')
     
     return redirect('auth')
+
 
 
 # Helper: Get available slots (bugFix/time-slots: barber time-slots not reflecting on customer dashboard)
@@ -337,21 +369,27 @@ def customer_dashboard(request):
         customer = request.user.customer_profile
         now = timezone.now()
         
+        # FIXED: Include only active upcoming bookings
         upcoming_bookings = Reservation.objects.filter(
             customer=customer,
             appointment_datetime__gte=now,
-            status__in=['pending', 'confirmed', 'rescheduled']
+            status__in=['pending', 'confirmed']  # Removed 'rescheduled'
         ).select_related('barber__user', 'service_type').order_by('appointment_datetime')
         
+        # FIXED: Past bookings include old dates OR finished/rejected statuses
         past_bookings = Reservation.objects.filter(
             customer=customer
         ).filter(
-            Q(appointment_datetime__lt=now) | 
-            Q(status__in=['completed', 'no_show', 'cancelled']) 
+            Q(appointment_datetime__lt=now) |  # Past dates
+            Q(status__in=['cancelled', 'rejected', 'completed', 'no_show'])  # Or finished statuses
+        ).exclude(
+            # Don't show future appointments that are still pending/confirmed
+            appointment_datetime__gte=now,
+            status__in=['pending', 'confirmed']
         ).select_related('barber__user', 'service_type').order_by('-appointment_datetime')[:10]
         
         services = ServiceType.objects.filter(is_active=True).order_by('name')
-        barbers = Barber.objects.filter(is_active=True, is_available_for_booking=True).select_related('user')
+        barbers = Barber.objects.filter(is_active=True, is_available_for_booking=True, is_approved=True ).select_related('user')
         
         selected_booking = None
         reschedule_booking = None
@@ -376,7 +414,6 @@ def customer_dashboard(request):
                 if not reschedule_booking.can_be_cancelled():
                     messages.error(request, "Cannot reschedule within 24 hours.")
                     return redirect('customer_dashboard')
-                    
             except Reservation.DoesNotExist:
                 messages.error(request, "Booking not found.")
                 return redirect('customer_dashboard')
@@ -392,13 +429,12 @@ def customer_dashboard(request):
                     messages.error(request, "Can only rate completed appointments.")
                     rating_booking = None
                 elif rating_booking.rating is not None:
-                     messages.error(request, "Already rated.")
-                     rating_booking = None
-                     
+                    messages.error(request, "Already rated.")
+                    rating_booking = None
             except Reservation.DoesNotExist:
                 messages.error(request, "Booking not found.")
                 return redirect('customer_dashboard')
-
+        
         show_booking_form = request.GET.get('action') == 'book'
         
         context = {
@@ -416,7 +452,6 @@ def customer_dashboard(request):
         }
         
         return render(request, "customer_dashboard.html", context)
-    
     except Customer.DoesNotExist:
         messages.error(request, "Customer profile not found.")
         return redirect("auth")
@@ -616,31 +651,28 @@ def reschedule_booking_view(request, booking_id):
             
             # Validate slot
             available_slots = _get_barber_slots_for_date(booking.barber, new_date, booking.duration)
-            
             if new_time not in available_slots:
                 messages.error(request, 'Time slot not available.')
                 return redirect(f"{reverse('customer_dashboard')}?reschedule={booking_id}")
             
             old_datetime = booking.appointment_datetime
             booking.appointment_datetime = new_datetime
-            booking.status = 'rescheduled'
+            # FIXED: Keep status as confirmed/pending instead of 'rescheduled'
+            # Status stays the same - no change needed
             booking.save()
             
-            messages.success(request, 
+            messages.success(request,
                 f'Rescheduled from {old_datetime.strftime("%B %d at %I:%M %p")} '
                 f'to {new_datetime.strftime("%B %d at %I:%M %p")}.')
-        
         except ValueError:
             messages.error(request, 'Invalid date/time.')
             return redirect(f"{reverse('customer_dashboard')}?reschedule={booking_id}")
-    
     except Customer.DoesNotExist:
         messages.error(request, 'Customer profile not found.')
     except Exception as e:
         messages.error(request, f'Error: {str(e)}')
     
     return redirect('customer_dashboard')
-
 
 # Submit rating
 @login_required(login_url='auth')
@@ -687,7 +719,6 @@ def submit_rating_view(request, booking_id):
     return redirect('customer_dashboard')
 
 
-# Helper: Barber dashboard data
 def _get_barber_dashboard_data(barber):
     """Get barber dashboard data"""
     now = timezone.now()
@@ -697,18 +728,21 @@ def _get_barber_dashboard_data(barber):
     all_reservations = Reservation.objects.filter(
         barber=barber
     ).select_related('customer__user', 'service_type').order_by('appointment_datetime')
-
+    
+    # Today's appointments
     today_appointments = all_reservations.filter(
         appointment_datetime__gte=today_start,
         appointment_datetime__lt=today_end,
         status__in=['pending', 'confirmed', 'in_progress', 'completed', 'no_show']
     ).order_by('appointment_datetime')
-
+    
+    # FIXED: Upcoming appointments - only show pending and confirmed
     upcoming_appointments = all_reservations.filter(
         appointment_datetime__gte=today_end,
-        status__in=['pending', 'confirmed']
+        status__in=['pending', 'confirmed']  # Removed 'rescheduled'
     ).order_by('appointment_datetime')
-
+    
+    # Stats
     stats_today_count = all_reservations.filter(
         appointment_datetime__gte=today_start,
         appointment_datetime__lt=today_end,
@@ -722,9 +756,9 @@ def _get_barber_dashboard_data(barber):
         appointment_datetime__lt=week_end,
         status__in=['pending', 'confirmed', 'in_progress', 'completed']
     ).count()
-
+    
     stats_completed_count = all_reservations.filter(status='completed').count()
-
+    
     return {
         'barber': barber,
         'today_appointments': today_appointments,
@@ -733,6 +767,7 @@ def _get_barber_dashboard_data(barber):
         'stats_week_count': stats_week_count,
         'stats_completed_count': stats_completed_count,
     }
+
 
 
 # Barber dashboard
@@ -814,6 +849,37 @@ def update_booking_status(request, booking_id):
     booking.save()
     return redirect('barber_dashboard')
 
+# reject view for rejecting bookings
+@login_required(login_url='auth')
+def barber_reject_booking(request, booking_id):
+    """Barber rejects/cancels an appointment"""
+    if request.method != 'POST':
+        return redirect('barber_dashboard')
+    
+    try:
+        barber = request.user.barber_profile
+        booking = get_object_or_404(Reservation, id=booking_id)
+        
+        if booking.barber != barber:
+            messages.error(request, 'Can only manage own appointments.')
+            return redirect('barber_dashboard')
+        
+        reason = request.POST.get('reason', 'Rejected by barber')
+        
+        booking.status = 'rejected'
+        booking.cancellation_reason = reason
+        booking.cancelled_at = timezone.now()
+        booking.cancelled_by = request.user
+        booking.save()
+        
+        messages.success(request, f'Booking #{booking.id} has been rejected.')
+        
+    except Barber.DoesNotExist:
+        messages.error(request, 'Not authorized.')
+    except Exception as e:
+        messages.error(request, f'Error: {str(e)}')
+    
+    return redirect('barber_dashboard')
 
 # Barber schedule
 @login_required(login_url='auth')

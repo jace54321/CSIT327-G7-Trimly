@@ -645,4 +645,25 @@
   background: #e04444;
   border-color: #e04444;
 }
+.status-approved {
+    color: #32d296; /* green */
+    font-weight: bold;
+}
+
+.status-pending {
+    color: #f5c542; /* yellowish */
+    font-weight: bold;
+}
+
+/* APPROVE BUTTON */
+.btn-action.approve {
+    background-color: #32d296; 
+    color: black;
+}
+
+/* REJECT BUTTON */
+.btn-action.reject {
+    background-color: #ff4d4d;
+    color: white;
+}
 
