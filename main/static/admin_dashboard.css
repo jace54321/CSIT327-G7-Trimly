@@ -667,3 +667,65 @@
     color: white;
 }
 
+
+
+/* The main input box */
+.select2-container--default .select2-selection--single {
+  background-color: rgba(12, 12, 14, 0.45);
+  border: 1.2px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  height: 46px; /* Match your other inputs */
+  display: flex;
+  align-items: center;
+}
+
+/* The text inside the box */
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+  color: #fff;
+  padding-left: 14px;
+  font-size: 15px;
+  line-height: normal;
+}
+
+/* The dropdown arrow */
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+  height: 44px;
+  right: 10px;
+}
+.select2-container--default .select2-selection--single .select2-selection__arrow b {
+  border-color: #fff transparent transparent transparent;
+}
+
+/* The Dropdown Menu (The list that pops up) */
+.select2-dropdown {
+  background-color: #1c1c21;
+  border: 1.2px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  overflow: hidden;
+  z-index: 9999; /* Ensure it sits on top of the modal */
+}
+
+/* The Search Input inside the dropdown */
+.select2-container--default .select2-search--dropdown .select2-search__field {
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #fff;
+  padding: 8px;
+}
+
+/* The Options in the list */
+.select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+  background-color: var(--accent); /* Your gold color */
+  color: #1b120a;
+}
+
+.select2-container--default .select2-results__option--selected {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.select2-results__option {
+  color: #ccc;
+  padding: 10px 14px;
+}
