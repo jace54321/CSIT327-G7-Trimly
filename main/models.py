@@ -369,9 +369,8 @@ class Reservation(models.Model):
             self.barber.update_rating()
 
     def can_be_cancelled(self):
-        """Check if reservation can be cancelled (e.g., not within 24 hours)"""
-        cancellation_deadline = self.appointment_datetime - timedelta(hours=24)
-        return timezone.now() < cancellation_deadline
+        """Allow cancellation at any time"""
+        return True
 
     def cancel(self, cancelled_by=None, reason=""):
         """Cancel the reservation"""

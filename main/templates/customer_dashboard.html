@@ -627,6 +627,7 @@
 
         let currentDate = new Date();
         const minDate = new Date();
+        minDate.setDate(minDate.getDate() - 1);  // Allow today and onwards
         const maxDate = new Date();
         maxDate.setMonth(maxDate.getMonth() + 3);
 

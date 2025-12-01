@@ -490,7 +490,10 @@ def create_booking_view(request):
             messages.error(request, 'Invalid date/time format.')
             return redirect(book_form_url)
 
-        if appointment_datetime < timezone.now():
+        # Allow bookings for today and future dates
+        now = timezone.now()
+        today = now.date()
+        if appointment_date < today:
             messages.error(request, 'Cannot book in the past.')
             return redirect(book_form_url)
         
