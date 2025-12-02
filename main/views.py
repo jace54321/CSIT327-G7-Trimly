@@ -513,7 +513,8 @@ def create_booking_view(request):
             duration=service.duration,
             price=service.price,
             service_description=notes,
-            status='pending'
+            status='pending',
+            booking_source='online'
         )
         
         # ✅ SEND CONFIRMATION EMAIL
@@ -1588,7 +1589,8 @@ def admin_create_booking_view(request):
                 appointment_datetime=appointment_datetime,
                 duration=service.duration,
                 price=service.price,
-                status='confirmed', 
+                status='confirmed',
+                booking_source='walk_in',
                 service_description="Manually booked by Admin"
             )
 

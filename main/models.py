@@ -293,6 +293,19 @@ class Reservation(models.Model):
     
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     
+    # Booking source tracking
+    BOOKING_SOURCE_CHOICES = [
+        ('online', 'Online'),
+        ('walk_in', 'Walk-in'),
+    ]
+    
+    booking_source = models.CharField(
+        max_length=20,
+        choices=BOOKING_SOURCE_CHOICES,
+        default='online',
+        help_text="Source of the booking: Online (customer-created) or Walk-in (admin-created)"
+    )
+    
     # Cancellation details
     cancellation_reason = models.TextField(blank=True, null=True)
     cancelled_at = models.DateTimeField(null=True, blank=True)
