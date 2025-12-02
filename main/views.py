@@ -26,6 +26,8 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Q, Sum, Count, Avg
 from .models import Reservation, Barber, Customer, ServiceType
 from django.core.paginator import Paginator
+from django.views.decorators.http import require_POST
+
 
 
 # Landing page
@@ -44,6 +46,27 @@ def auth_view(request):
     show_register = request.GET.get('mode') == 'register'
     return render(request, "auth.html", {'show_register': show_register})
 
+# Wait for approval 
+def waiting_approval_view(request):
+    return render(request, "waiting_for_approval.html")
+@require_POST
+def approve_barber(request, barber_id):
+    if request.method == "POST":
+        barber = get_object_or_404(Barber, id=barber_id)
+        barber.is_approved = True
+        barber.save()
+        messages.success(request, "Barber approved successfully!")
+    return redirect("admin_dashboard")
+
+
+
+@require_POST
+def reject_barber(request, barber_id):
+    if request.method == "POST":
+        barber = get_object_or_404(Barber, id=barber_id)
+        barber.delete()
+        messages.success(request, "Barber rejected and removed.")
+    return redirect("admin_dashboard")
 
 # Registration
 def registration_view(request):
@@ -123,17 +146,20 @@ def registration_view(request):
             clean_phone = validate_phone_number(phone_number)
 
             if role == "barber":
+                # Create barber with default is_approved=False
                 Barber.objects.create(user=user, phone_number=clean_phone)
-                redirect_url = "barber_dashboard"
+                messages.info(request, "Your account is pending admin approval. Please wait to be approved.")
+                # Show waiting page instead of logging in
+                return redirect("waiting_approval")
+
             elif role == "customer":
                 Customer.objects.create(user=user, phone_number=clean_phone)
-                redirect_url = "customer_dashboard"
+                login(request, user)
+                messages.success(request, "Registration successful! Welcome!")
+                return redirect("customer_dashboard")
             else:
-                redirect_url = "landing"
-
-            login(request, user)
-            messages.success(request, "Registration successful! Welcome!")
-            return redirect(redirect_url)
+                login(request, user)
+                return redirect("landing")
 
         except IntegrityError:
             messages.error(request, "Registration unsuccessful! Please try again.")
@@ -168,6 +194,11 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         
         if user is not None:
+            # If user is a barber, check approval
+            if hasattr(user, "barber_profile") and not user.barber_profile.is_approved:
+                messages.info(request, "Your account is pending admin approval.")
+                return render(request, "waiting_for_approval.html", {"user": user})
+
             login(request, user)
             if hasattr(user, "barber_profile"):
                 return redirect("barber_dashboard")
@@ -182,6 +213,7 @@ def login_view(request):
         return redirect('auth')
     
     return redirect('auth')
+
 
 
 # Helper: Get available slots (bugFix/time-slots: barber time-slots not reflecting on customer dashboard)
@@ -357,7 +389,7 @@ def customer_dashboard(request):
         ).select_related('barber__user', 'service_type').order_by('-appointment_datetime')[:10]
         
         services = ServiceType.objects.filter(is_active=True).order_by('name')
-        barbers = Barber.objects.filter(is_active=True, is_available_for_booking=True).select_related('user')
+        barbers = Barber.objects.filter(is_active=True, is_available_for_booking=True, is_approved=True ).select_related('user')
         
         selected_booking = None
         reschedule_booking = None
@@ -458,7 +490,10 @@ def create_booking_view(request):
             messages.error(request, 'Invalid date/time format.')
             return redirect(book_form_url)
 
-        if appointment_datetime < timezone.now():
+        # Allow bookings for today and future dates
+        now = timezone.now()
+        today = now.date()
+        if appointment_date < today:
             messages.error(request, 'Cannot book in the past.')
             return redirect(book_form_url)
         
@@ -478,7 +513,8 @@ def create_booking_view(request):
             duration=service.duration,
             price=service.price,
             service_description=notes,
-            status='pending'
+            status='pending',
+            booking_source='online'
         )
         
         # ✅ SEND CONFIRMATION EMAIL
@@ -1064,6 +1100,7 @@ def admin_dashboard_view(request):
     # --- Get Barbers (for management & filters) ---
     all_barbers = Barber.objects.all().select_related('user').order_by('user__first_name')
     all_services = ServiceType.objects.all().order_by('name')
+    all_customers = Customer.objects.all().select_related('user').order_by('user__first_name')
 
     # ==================================================
     # BOOKING FILTERING & PAGINATION
@@ -1107,7 +1144,7 @@ def admin_dashboard_view(request):
     # ==================================================
     # CUSTOMER FILTERING & PAGINATION
     # ==================================================
-    customer_list = Customer.objects.all().select_related('user').order_by('user__first_name')
+    customer_table_list = Customer.objects.all().select_related('user').order_by('user__first_name')
     
     filter_customer_name = request.GET.get('customer_name', '')
     
@@ -1119,7 +1156,7 @@ def admin_dashboard_view(request):
             Q(user__username__icontains=filter_customer_name)
         )
 
-    customer_paginator = Paginator(customer_list, 10) # 10 customers per page
+    customer_paginator = Paginator(customer_table_list, 10) # 10 customers per page
     customer_page_number = request.GET.get('c_page') # Uses 'c_page' query param
     customers_page = customer_paginator.get_page(customer_page_number)
     
@@ -1145,6 +1182,8 @@ def admin_dashboard_view(request):
         'customers_page': customers_page,
 
         'all_services': all_services,
+
+        'all_customers': all_customers,
 
         'filter_params': filter_params,
     }
@@ -1471,6 +1510,97 @@ def admin_delete_service_view(request, service_id):
         except Exception as e:
             messages.error(request, f"An error occurred: {str(e)}")
             
+    return redirect('admin_dashboard')
+
+
+
+@staff_member_required(login_url='landing')
+def admin_create_booking_view(request):
+    """
+    Allow Admin to manually create a booking (e.g., for walk-ins).
+    Validates availability before saving.
+    """
+    if request.method == "POST":
+        try:
+            customer_id = request.POST.get("customer")
+            barber_id = request.POST.get("barber")
+            service_id = request.POST.get("service")
+            date_str = request.POST.get("date")
+            time_str = request.POST.get("time")
+
+            # 1. Basic Validation
+            if not all([customer_id, barber_id, service_id, date_str, time_str]):
+                messages.error(request, "All fields are required to create a booking.")
+                return redirect('admin_dashboard')
+
+            # 2. Get Objects
+            customer = get_object_or_404(Customer, id=customer_id)
+            barber = get_object_or_404(Barber, id=barber_id)
+            service = get_object_or_404(ServiceType, id=service_id)
+
+            # 3. Parse Date & Time
+            appointment_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            appointment_time = datetime.strptime(time_str, '%H:%M').time()
+            appointment_datetime = timezone.make_aware(datetime.combine(appointment_date, appointment_time))
+
+            # 4. Calculate End Time
+            # (We need this to check for overlaps)
+            duration_minutes = service.duration
+            appointment_end_datetime = appointment_datetime + timedelta(minutes=duration_minutes)
+            
+            # 5. CHECK FOR DOUBLE BOOKINGS
+            # Check if the barber already has a confirmed/pending/in-progress booking that overlaps
+            conflicting_bookings = Reservation.objects.annotate(
+                booking_end_time=ExpressionWrapper(
+                    F('appointment_datetime') + F('duration') * timedelta(minutes=1),
+                    output_field=DateTimeField()
+                )
+            ).filter(
+                barber=barber,
+                status__in=['pending', 'confirmed', 'in_progress'],
+                appointment_datetime__lt=appointment_end_datetime,  # New start < Old end
+                booking_end_time__gt=appointment_datetime           # New end > Old start
+            )
+
+            if conflicting_bookings.exists():
+                messages.error(request, f"Creation Failed: {barber.get_full_name()} is already booked at this time.")
+                return redirect('admin_dashboard')
+
+            # 6. Check for Blocked Time (Schedules)
+            # Check if there is a specific 'blocker' schedule for this time
+            is_blocked = Schedule.objects.filter(
+                barber=barber,
+                date=appointment_date,
+                start_time__lte=appointment_time, 
+                end_time__gte=appointment_end_datetime.time(),
+                is_available=False
+            ).exists()
+
+            if is_blocked:
+                 messages.error(request, f"Creation Failed: The barber has blocked this time slot.")
+                 return redirect('admin_dashboard')
+
+            # 7. Create Reservation
+            # Since Admin is doing it, we set it to 'confirmed' immediately
+            Reservation.objects.create(
+                customer=customer,
+                barber=barber,
+                service_type=service,
+                appointment_datetime=appointment_datetime,
+                duration=service.duration,
+                price=service.price,
+                status='confirmed',
+                booking_source='walk_in',
+                service_description="Manually booked by Admin"
+            )
+
+            messages.success(request, "Booking created successfully!")
+
+        except ValueError:
+            messages.error(request, "Invalid date or time format.")
+        except Exception as e:
+            messages.error(request, f"An error occurred: {str(e)}")
+
     return redirect('admin_dashboard')
 
 @staff_member_required(login_url='landing')

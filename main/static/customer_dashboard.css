@@ -243,6 +243,16 @@ body {
   }
 }
 
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
 .booking-flow-header {
   display: flex;
   justify-content: space-between;
@@ -1679,4 +1689,145 @@ body {
 .booking-card-body > div:last-child:hover i {
   transform: translateY(2px);
   transition: transform 0.2s;
+}
+
+
+/* ==================== STAR RATING SYSTEM ==================== */
+.star-rating-container {
+  display: flex;
+  flex-direction: row-reverse; 
+  justify-content: center;
+  gap: 12px;
+  margin: 20px 0;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  /* Removed backdrop-filter here to save performance */
+}
+
+/* Hide radio buttons */
+.star-rating-container input[type="radio"] {
+  display: none;
+}
+
+/* The Star Icons */
+.star-rating-container label {
+  color: #4b5563; 
+  font-size: 28px; 
+  cursor: pointer;
+  
+  /* PERFORMANCE FIX: */
+  /* 1. Animate ONLY color and transform (not 'all') */
+  /* 2. Shorten time to 0.1s for "snappy" feel */
+  transition: color 0.1s ease-out, transform 0.1s ease-out;
+  
+  /* Fix for some browsers causing text-flicker during transform */
+  backface-visibility: hidden; 
+  transform: translateZ(0);
+}
+
+/* HOVER & CHECKED STATE */
+.star-rating-container input:checked ~ label,
+.star-rating-container input:checked + label,
+.star-rating-container label:hover,
+.star-rating-container label:hover ~ label {
+  color: var(--accent);
+  
+  /* Reduced shadow spread slightly for performance */
+  text-shadow: 0 0 8px rgba(243, 211, 124, 0.4); 
+  
+  transform: scale(1.15); /* Slightly larger pop for better feedback */
+}
+
+/* ==================== RATING MODAL GLASSMORPHISM ==================== */
+.modal-content.rating-modal {
+  max-width: 500px;
+}
+
+#ratingModal {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.rating-modal-header {
+  text-align: center;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.rating-modal-header h4 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.rating-modal-header p {
+  margin: 0;
+  font-size: 14px;
+  color: #8a92a8;
+  font-weight: 500;
+}
+
+/* Rating modal buttons with proper glassmorphism styling */
+.modal-footer .btn-submit {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.4), rgba(34, 197, 94, 0.25));
+  border: 1.2px solid rgba(34, 197, 94, 0.5);
+  color: #22c55e;
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 10px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: all 0.3s ease;
+}
+
+.modal-footer .btn-submit:hover {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.6), rgba(34, 197, 94, 0.4));
+  border-color: rgba(34, 197, 94, 0.8);
+  box-shadow: 0 8px 32px rgba(34, 197, 94, 0.2);
+  transform: translateY(-2px);
+}
+
+/* ==================== BARBER CARD RATING ==================== */
+.barber-rating {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.rating-stars {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 11px;
+}
+
+.rating-stars i {
+  color: var(--accent);
+  font-size: 10px;
+  margin-right: -2px;
+}
+
+.rating-value {
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.rating-count {
+  color: #8a92a8;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.rating-no-reviews {
+  color: #8a92a8;
+  font-size: 9px;
+  font-weight: 500;
+  font-style: italic;
 }

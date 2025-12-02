@@ -15,6 +15,12 @@ urlpatterns = [
     path("register/", views.registration_view, name="register"),
     path("logout/", views.logout_view, name="logout"),
 
+
+    #waiting for approval path
+    path("waiting-approval/", views.waiting_approval_view, name="waiting_approval"),
+  
+
+
     # Password Reset - All Django Built-in
     path(
         "password-reset/",
@@ -71,7 +77,11 @@ urlpatterns = [
     path('admin-dashboard/service/edit/<int:service_id>/', views.admin_edit_service_view, name='admin_edit_service'),
     path('admin-dashboard/service/delete/<int:service_id>/', views.admin_delete_service_view, name='admin_delete_service'),
     path('admin-dashboard/booking/update/<int:booking_id>/', views.admin_update_booking_status, name='admin_update_booking_status'),
+    path('admin-dashboard/booking/create/', views.admin_create_booking_view, name='admin_create_booking'),
     path('admin-dashboard/user/reset-password/<int:user_id>/', views.admin_reset_password_view, name='admin_reset_password'),
+    path("admin-dashboard/barber/approve/<int:barber_id>/", views.approve_barber, name="approve_barber"),
+    path("admin-dashboard/barber/reject/<int:barber_id>/", views.reject_barber, name="reject_barber"),
+
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 

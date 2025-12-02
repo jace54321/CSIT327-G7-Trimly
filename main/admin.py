@@ -254,8 +254,8 @@ class ScheduleAdmin(admin.ModelAdmin):
 @admin.register(Reservation)
 class ReservationAdmin(admin.ModelAdmin):
     list_display = ('id', 'get_customer_name', 'get_barber_name', 'appointment_datetime', 
-                    'service_type', 'status', 'price')
-    list_filter = ('status', 'service_type', 'appointment_datetime', 'barber')
+                    'service_type', 'booking_source', 'status', 'price')
+    list_filter = ('status', 'booking_source', 'service_type', 'appointment_datetime', 'barber')
     search_fields = ('customer__user__first_name', 'customer__user__last_name',
                      'customer__user__username', 'barber__user__first_name', 
                      'barber__user__last_name', 'barber__user__username',
@@ -269,6 +269,9 @@ class ReservationAdmin(admin.ModelAdmin):
         }),
         ('Service Information', {
             'fields': ('service_description', 'price')
+        }),
+        ('Booking Information', {
+            'fields': ('booking_source',)
         }),
         ('Status', {
             'fields': ('status',)

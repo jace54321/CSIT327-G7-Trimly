@@ -30,10 +30,9 @@ class ServiceType(models.Model):
 
 
 class Barber(models.Model):
-    """
-    Barber model for individual barber system
-    OneToOne with User provides: username, email, password, first_name, last_name
-    """
+    # OneToOne relationship with Django User model (REQUIRED)
+    # This gives access to username, email, password, first_name, last_name
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='barber_profile')
     
     # Professional information
@@ -55,6 +54,9 @@ class Barber(models.Model):
     # Status and availability
     is_active = models.BooleanField(default=True)
     is_available_for_booking = models.BooleanField(default=True)
+    
+    # **Admin approval field**
+    is_approved = models.BooleanField(default=False, help_text="Indicates if the barber has been approved by an admin")
     
     # Ratings (calculated from customer feedback)
     average_rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)
@@ -291,6 +293,19 @@ class Reservation(models.Model):
     
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     
+    # Booking source tracking
+    BOOKING_SOURCE_CHOICES = [
+        ('online', 'Online'),
+        ('walk_in', 'Walk-in'),
+    ]
+    
+    booking_source = models.CharField(
+        max_length=20,
+        choices=BOOKING_SOURCE_CHOICES,
+        default='online',
+        help_text="Source of the booking: Online (customer-created) or Walk-in (admin-created)"
+    )
+    
     # Cancellation details
     cancellation_reason = models.TextField(blank=True, null=True)
     cancelled_at = models.DateTimeField(null=True, blank=True)
@@ -367,9 +382,8 @@ class Reservation(models.Model):
             self.barber.update_rating()
 
     def can_be_cancelled(self):
-        """Check if reservation can be cancelled (e.g., not within 24 hours)"""
-        cancellation_deadline = self.appointment_datetime - timedelta(hours=24)
-        return timezone.now() < cancellation_deadline
+        """Allow cancellation at any time"""
+        return True
 
     def cancel(self, cancelled_by=None, reason=""):
         """Cancel the reservation"""
