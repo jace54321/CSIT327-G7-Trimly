@@ -1150,7 +1150,7 @@ def admin_dashboard_view(request):
     
     if filter_customer_name:
         # Filter by first name, last name, or username
-        customer_list = customer_list.filter(
+        customer_list = customer_table_list.filter(
             Q(user__first_name__icontains=filter_customer_name) |
             Q(user__last_name__icontains=filter_customer_name) |
             Q(user__username__icontains=filter_customer_name)
