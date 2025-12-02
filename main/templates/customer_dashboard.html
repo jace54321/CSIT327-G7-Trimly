@@ -18,7 +18,6 @@
     <header class="navbar navbar-glass">
         <div class="navbar-left">
             <a href="{% url 'landing' %}" class="logo-link">
-                <div class="brand-mark">✂</div>
                 <h1 class="logo">TRIMLY</h1>
             </a>
         </div>
@@ -51,6 +50,19 @@
                 </div>
             {% endfor %}
         </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const alerts = document.querySelectorAll('.alert');
+                alerts.forEach(alert => {
+                    setTimeout(() => {
+                        alert.style.animation = 'fadeOut 0.3s ease forwards';
+                        setTimeout(() => {
+                            alert.remove();
+                        }, 300);
+                    }, 4000);
+                });
+            });
+        </script>
     {% endif %}
 
     {# ===================== Main Dashboard UI ===================== #}
@@ -159,6 +171,17 @@
                                             {% if barber.specialty %}
                                                 <p class="barber-specialty">{{ barber.specialty }}</p>
                                             {% endif %}
+                                            <div class="barber-rating">
+                                                <div class="rating-stars">
+                                                    {% if barber.average_rating > 0 %}
+                                                        <i class="fas fa-star"></i>
+                                                        <span class="rating-value">{{ barber.average_rating }}</span>
+                                                        <span class="rating-count">({{ barber.total_ratings }})</span>
+                                                    {% else %}
+                                                        <span class="rating-no-reviews">No reviews yet</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
                                         </div>
                                     {% endfor %}
                                 </div>
@@ -573,37 +596,35 @@
 
     {# ==================== RATING MODAL (Added) ==================== #}
     {% if rating_booking %}
-    <div class="modal-overlay" id="ratingModal" style="display: flex; align-items: center; justify-content: center; z-index: 1000;">
-        <div class="modal-content" style="max-width: 500px; width: 90%; background: #1f2937; color: white; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
-            
-            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid rgba(255,255,255,0.1);">
-                <h3 style="margin: 0; font-size: 1.25rem; font-weight: 600;"><i class="fas fa-star" style="color: #fbbf24; margin-right: 8px;"></i> Rate Your Service</h3>
-                <a href="{% url 'customer_dashboard' %}" class="close-modal-btn" style="background: none; border: none; color: #9ca3af; cursor: pointer; font-size: 1.25rem;">
+    <div class="modal-overlay" id="ratingModal">
+        <div class="modal-content rating-modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3><i class="fas fa-star"></i> Rate Your Service</h3>
+                <a href="{% url 'customer_dashboard' %}" class="close-modal-btn">
                     <i class="fas fa-times"></i>
                 </a>
             </div>
             
             <form method="POST" action="{% url 'submit_rating' rating_booking.id %}">
                 {% csrf_token %}
-                <div class="modal-body" style="padding: 24px;">
-                    
-                    <div style="text-align: center; margin-bottom: 24px;">
-                        <h4 style="margin: 0; font-size: 1.1rem;">{{ rating_booking.service_type.name }}</h4>
-                        <p style="margin: 4px 0 0 0; color: #9ca3af; font-size: 0.9rem;">with {{ rating_booking.barber.get_full_name }}</p>
+                <div class="modal-body">
+                    <div class="rating-modal-header">
+                        <h4>{{ rating_booking.service_type.name }}</h4>
+                        <p>with {{ rating_booking.barber.get_full_name }}</p>
                     </div>
 
-                    <div class="star-rating-container" style="display: flex; flex-direction: row-reverse; justify-content: center; gap: 8px; margin-bottom: 24px;">
-                        <input type="radio" name="rating" id="star5" value="5" style="display: none;" required><label for="star5" title="5 stars"><i class="fas fa-star"></i></label>
-                        <input type="radio" name="rating" id="star4" value="4" style="display: none;"><label for="star4" title="4 stars"><i class="fas fa-star"></i></label>
-                        <input type="radio" name="rating" id="star3" value="3" style="display: none;"><label for="star3" title="3 stars"><i class="fas fa-star"></i></label>
-                        <input type="radio" name="rating" id="star2" value="2" style="display: none;"><label for="star2" title="2 stars"><i class="fas fa-star"></i></label>
-                        <input type="radio" name="rating" id="star1" value="1" style="display: none;"><label for="star1" title="1 star"><i class="fas fa-star"></i></label>
+                    <div class="star-rating-container">
+                        <input type="radio" name="rating" id="star5" value="5" required><label for="star5" title="5 stars"><i class="fas fa-star"></i></label>
+                        <input type="radio" name="rating" id="star4" value="4"><label for="star4" title="4 stars"><i class="fas fa-star"></i></label>
+                        <input type="radio" name="rating" id="star3" value="3"><label for="star3" title="3 stars"><i class="fas fa-star"></i></label>
+                        <input type="radio" name="rating" id="star2" value="2"><label for="star2" title="2 stars"><i class="fas fa-star"></i></label>
+                        <input type="radio" name="rating" id="star1" value="1"><label for="star1" title="1 star"><i class="fas fa-star"></i></label>
                     </div>
                 </div>
 
-                <div class="modal-footer" style="padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: flex-end; gap: 12px;">
-                    <a href="{% url 'customer_dashboard' %}" class="btn-secondary" style="padding: 8px 16px; border-radius: 6px; background: rgba(255,255,255,0.1); color: white; text-decoration: none; font-size: 0.9rem;">Cancel</a>
-                    <button type="submit" class="btn-primary" style="padding: 8px 16px; border-radius: 6px; background: #0cc20f; color: white; border: none; font-weight: 600; cursor: pointer; font-size: 0.9rem;">Submit Review</button>
+                <div class="modal-footer">
+                    <a href="{% url 'customer_dashboard' %}" class="btn-secondary">Cancel</a>
+                    <button type="submit" class="btn-primary">Submit Review</button>
                 </div>
             </form>
         </div>
